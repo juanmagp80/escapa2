@@ -1,16 +1,17 @@
 package com.escapa2.radar.data.remote.dto
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class AiSummaryRequestDto(
     val destination: String,
     val travelers: Int,
-    val totalCostEur: Double,
-    val budgetEur: Double,
-    val usefulHours: Double,
-    val transportMode: String,
-    val verifiedAt: String,
+    @SerialName("total_cost_eur") val totalCostEur: Double,
+    @SerialName("budget_eur") val budgetEur: Double,
+    @SerialName("useful_hours") val usefulHours: Double,
+    @SerialName("transport_mode") val transportMode: String,
+    @SerialName("verified_at") val verifiedAt: String,
     val facts: List<String> = emptyList(),
 )
 
@@ -21,5 +22,5 @@ data class AiSummaryDto(
     val pros: List<String> = emptyList(),
     val cons: List<String> = emptyList(),
     val confidence: String,
-    val generatedByAi: Boolean,
+    @SerialName("generated_by_ai") val generatedByAi: Boolean,
 )

@@ -3,10 +3,14 @@ package com.escapa2.radar.data.remote
 import com.escapa2.radar.data.model.OpportunitySearchFilters
 import com.escapa2.radar.data.remote.dto.AiSummaryDto
 import com.escapa2.radar.data.remote.dto.AiSummaryRequestDto
+import com.escapa2.radar.data.remote.dto.AirportPreferenceDto
 import com.escapa2.radar.data.remote.dto.OpportunityDto
+import com.escapa2.radar.data.remote.dto.ProfileDto
+import com.escapa2.radar.data.remote.dto.ProfileUpdateDto
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -34,4 +38,16 @@ interface Escapa2Api {
 
     @POST("ai/opportunity-summary")
     suspend fun summarizeOpportunity(@Body body: AiSummaryRequestDto): AiSummaryDto
+
+    @GET("profile")
+    suspend fun getProfile(): ProfileDto
+
+    @PUT("profile")
+    suspend fun updateProfile(@Body body: ProfileUpdateDto): ProfileDto
+
+    @GET("profile/airports")
+    suspend fun getAirports(): List<AirportPreferenceDto>
+
+    @PUT("profile/airports")
+    suspend fun replaceAirports(@Body body: List<AirportPreferenceDto>): List<AirportPreferenceDto>
 }

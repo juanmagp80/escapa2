@@ -7,6 +7,9 @@ plugins {
     alias(libs.plugins.hilt)
 }
 
+val escapa2ApiBaseUrl: String = (project.findProperty("escapa2ApiBaseUrl") as String?)
+    ?: "https://escapa2-backend.onrender.com/api/v1/"
+
 android {
     namespace = "com.escapa2.radar"
     compileSdk = 35
@@ -19,6 +22,8 @@ android {
         versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "API_BASE_URL", "\"$escapa2ApiBaseUrl\"")
     }
 
     buildTypes {
@@ -33,6 +38,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     compileOptions {

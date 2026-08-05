@@ -12,8 +12,14 @@ import com.escapa2.radar.data.repository.FakeAiRepository
 import com.escapa2.radar.data.repository.FakeOpportunityRepository
 import com.escapa2.radar.data.repository.FakeProfileRepository
 import com.escapa2.radar.data.repository.FakeSearchWatchRepository
+import com.escapa2.radar.data.repository.FallbackAiRepository
+import com.escapa2.radar.data.repository.FallbackOpportunityRepository
+import com.escapa2.radar.data.repository.FallbackProfileRepository
 import com.escapa2.radar.data.repository.OpportunityRepository
 import com.escapa2.radar.data.repository.ProfileRepository
+import com.escapa2.radar.data.repository.RemoteAiRepository
+import com.escapa2.radar.data.repository.RemoteOpportunityRepository
+import com.escapa2.radar.data.repository.RemoteProfileRepository
 import com.escapa2.radar.data.repository.SearchWatchRepository
 import dagger.Module
 import dagger.Provides
@@ -23,8 +29,9 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 /**
- * Development wiring: the fake repository is the default until the backend
- * deployment is available. Results are cached into Room for offline access.
+ * Repository wiring: remote repositories are the primary source and fall back
+ * to fake/local data when the backend is unreachable. Opportunity results are
+ * cached into Room for offline access.
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -50,9 +57,16 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideOpportunityRepository(
-        source: FakeOpportunityRepository,
+        api: Escapa2Api,
+        local: FakeOpportunityRepository,
         dao: OpportunityDao,
-    ): OpportunityRepository = CachedOpportunityRepository(source, dao)
+    ): OpportunityRepository {
+        val fallbackSource = FallbackOpportunityRepository(
+            RemoteOpportunityRepository(api),
+            local,
+        )
+        return CachedOpportunityRepository(fallbackSource, dao)
+    }
 
     @Provides
     @Singleton
@@ -61,9 +75,15 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideAiRepository(source: FakeAiRepository): AiRepository = source
+    fun provideAiRepository(
+        api: Escapa2Api,
+        fallback: FakeAiRepository,
+    ): AiRepository = FallbackAiRepository(RemoteAiRepository(api), fallback)
 
     @Provides
     @Singleton
-    fun provideProfileRepository(source: FakeProfileRepository): ProfileRepository = source
+    fun provideProfileRepository(
+        api: Escapa2Api,
+        fallback: FakeProfileRepository,
+    ): ProfileRepository = FallbackProfileRepository(RemoteProfileRepository(api), fallback)
 }

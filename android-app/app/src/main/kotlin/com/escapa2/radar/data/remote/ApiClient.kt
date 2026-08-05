@@ -1,5 +1,6 @@
 package com.escapa2.radar.data.remote
 
+import com.escapa2.radar.BuildConfig
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -10,8 +11,15 @@ import java.util.concurrent.TimeUnit
 
 object ApiClient {
 
-    // Placeholder until the backend is deployed. No secrets here.
-    const val BASE_URL: String = "https://api.escapa2.example.com/v1/"
+    /**
+     * Backend base URL under the /api/v1 prefix.
+     *
+     * The default points to the deployed backend; override it with the Gradle
+     * property `escapa2ApiBaseUrl` (e.g. `-Pescapa2ApiBaseUrl=http://...`).
+     * The repository layer falls back to fake data when the backend is not
+     * reachable.
+     */
+    val BASE_URL: String = BuildConfig.API_BASE_URL
 
     private val json: Json = Json {
         ignoreUnknownKeys = true

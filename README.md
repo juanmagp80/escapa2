@@ -19,7 +19,7 @@ escapa2-radar/
 
 Fase 0 completa, Fase 1 y Fase 2 (Gemini) backend completo: perfil, disponibilidad, oportunidades simuladas con métricas de coste y scoring, persistencia SQL opcional, pantallas Home/Explorar/Detalle/Radar/Perfil, caché Room con fallback offline, módulos de dominio puros (costes, horas útiles, score de valor, ahorro neto de gasolineras y reglas de alerta), y capa de IA con resumen de oportunidad, interpretación de búsqueda natural, itinerario estructurado, fallback determinista, rate limiting y caché.
 
-La app Android incluye: Home con dashboard (mejor oportunidad, mayor bajada, próximas fechas, vigilados y última actualización), Explorar con filtros de presupuesto, transporte, horas útiles, destino y duración, detalle con historial de precios, explicación de IA y botón para seguir la búsqueda, perfil editable con aeropuertos, y Radar con seguimientos simulados.
+La app Android incluye: Home con dashboard (mejor oportunidad, mayor bajada, próximas fechas, vigilados y última actualización), Explorar con filtros de presupuesto, transporte, horas útiles, destino y duración, detalle con historial de precios, explicación de IA y botón para seguir la búsqueda, perfil editable con aeropuertos, y Radar con seguimientos simulados. Los repositorios de oportunidades, IA y perfil consumen la API real con fallback a fakes; la URL base es configurable en build (`BuildConfig.API_BASE_URL`).
 
 ## Requisitos
 
@@ -67,7 +67,34 @@ cd android-app
 .\gradlew.bat lint
 ```
 
-Instala el APK generado en `android-app/app/build/outputs/apk/debug/app-debug.apk` o ejecuta desde Android Studio. En desarrollo la app usa repositorios fake (perfil, oportunidades, seguimientos), con caché Room para datos consultados.
+Instala el APK generado en `android-app/app/build/outputs/apk/debug/app-debug.apk` o ejecuta desde Android Studio.
+
+### Conexión al backend
+
+La URL base se inyecta en `BuildConfig.API_BASE_URL` desde la propiedad Gradle `escapa2ApiBaseUrl`:
+
+- Por defecto apunta al backend desplegado (`https://escapa2-backend.onrender.com/api/v1/`).
+- Para probar contra un backend local en tu red Wi-Fi:
+
+```powershell
+.\gradlew.bat assembleDebug -Pescapa2ApiBaseUrl=http://192.168.X.X:8000/api/v1/
+```
+
+El debug build permite HTTP local (`usesCleartextTraffic` en `src/debug`); release solo HTTPS.
+
+La app usa repositorios remotos con fallback automático a datos fake si el backend no responde, y caché Room si no hay red. El Radar (seguimientos) sigue con datos fake hasta que el backend exponga `/watches`.
+
+## Despliegue (Render)
+
+El backend se despliega en Render usando `render.yaml` + `backend/Dockerfile`:
+
+1. Sube el repositorio a GitHub.
+2. En Render (render.com), crea un Blueprint apuntando al repo y a `render.yaml` (o crea el Web Service manualmente: `rootDir: backend`, runtime Docker, health check `/health`).
+3. En el panel, configura `GEMINI_API_KEY` (y `GEMINI_ENABLED=true` si quieres IA real).
+4. Tras el primer despliegue, `https://<tu-servicio>.onrender.com/health` debe responder.
+5. Actualiza `escapa2ApiBaseUrl` en `android-app/app/build.gradle.kts` con la URL real y reconstruye el APK.
+
+Nota: con `PERSISTENCE_BACKEND=memory` los datos se resetean en cada reinicio del servicio. Pasar a PostgreSQL en Fases 3/4.
 
 ## Documentación
 

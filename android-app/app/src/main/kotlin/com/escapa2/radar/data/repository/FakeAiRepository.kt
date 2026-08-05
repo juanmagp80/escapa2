@@ -16,9 +16,9 @@ import javax.inject.Singleton
 class FakeAiRepository @Inject constructor() : AiRepository {
 
     override suspend fun summarizeOpportunity(opportunity: Opportunity): AiSummary {
-        val budget = DEFAULT_BUDGET_EUR
+        val budget = AiRepository.DEFAULT_BUDGET_EUR
         val difference = budget - opportunity.totalCostEur
-        val travelers = 2
+        val travelers = AiRepository.DEFAULT_TRAVELERS
 
         val headline: String
         val pros = mutableListOf<String>()
@@ -56,8 +56,4 @@ class FakeAiRepository @Inject constructor() : AiRepository {
 
     private fun formatHours(value: Double): String =
         String.format(Locale("es", "ES"), "%.1f", value)
-
-    companion object {
-        const val DEFAULT_BUDGET_EUR = 350.0
-    }
 }

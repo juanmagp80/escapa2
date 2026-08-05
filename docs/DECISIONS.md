@@ -93,3 +93,19 @@ Este documento registra las decisiones arquitectónicas relevantes del proyecto.
 - **Contexto:** AGENTS.md 11.2/11.4/11.6 pide un Home con dashboard, un detalle con historial y un perfil configurable, y el usuario reportó que la app era demasiado básica.
 - **Decisión:** En Android se añaden `TravelProfile`/`AirportPreference` con `FakeProfileRepository` (en memoria) y una `ProfileScreen` editable (ciudad, moneda, presupuesto, máximo en coche, transporte, intereses, exclusiones; aeropuertos en solo lectura). `SearchWatchRepository.createWatch()` permite seguir una búsqueda desde el detalle. El Home deriva el dashboard de datos ya existentes: mejor oportunidad por `valueScore` (desempate por coste/hora útil), mayor bajada por `previousTotalCostEur`, próximas fechas y última verificación. `Opportunity` incorpora `previousTotalCostEur` y `valueScore` opcionales (solo presentación; la caché Room no los persiste).
 - **Consecuencias:** Los datos del perfil y los seguimientos creados son por sesión mientras no exista backend real. El historial de precios del detalle es derivado (anterior → actual) hasta la Fase 4. La caché offline de Room no conserva los campos nuevos del modelo.
+
+## ADR-014: Backend desplegado en Render con persistencia en memoria
+
+- **Estado:** Aceptada (provisional hasta Fase 3/4).
+- **Contexto:** El APK del móvil debe conectarse a un backend por HTTPS. El usuario quiere probar la app en su teléfono; Supabase no ejecuta FastAPI, así que se necesita un host Python.
+- **Decisión:** Desplegar el backend en Render como servicio web Docker (`backend/Dockerfile`, Python 3.12 + uvicorn), con `PERSISTENCE_BACKEND=memory` en el primer despliegue para no depender de una base de datos. `render.yaml` declara el blueprint; `GEMINI_API_KEY` se configura a mano en el panel de Render (`sync: false`). `APP_ENV=production` desactiva los endpoints `/dev/*`.
+- **Alternativas descartadas:** Railway y Fly.io (equivalente pero sin servicio Docker en el plan gratuito tan directo), Hugging Face Spaces (sin garantías para API pública).
+- **Consecuencias:** Las oportunidades y el perfil vuelven a estado de fábrica al reiniciar el servicio. El radar diario y el historial persistente requieren pasar a PostgreSQL en Fases 3/4.
+
+## ADR-015: Repositorios remotos en Android con fallback a fakes
+
+- **Estado:** Aceptada.
+- **Contexto:** La app funcionaba solo con repositorios fake; para el despliegue debe consumir la API real y seguir funcionando si el backend no está disponible o durante el desarrollo sin servidor.
+- **Decisión:** La URL base se configura en tiempo de build mediante `BuildConfig.API_BASE_URL` (propiedad Gradle `escapa2ApiBaseUrl`; por defecto apunta al backend de Render). En `NetworkModule`, cada repositorio se envuelve en un fallback: `FallbackOpportunityRepository`, `FallbackAiRepository` y `FallbackProfileRepository` intentan el remoto y caen al fake local solo ante `IOException` o errores 5xx (nunca ante 4xx, para no enmascarar bugs). `CachedOpportunityRepository` sigue guardando en Room. Los DTOs usan `@SerialName` para alinearse con el JSON snake_case del backend. Los seguimientos (Radar) siguen con fakes porque el backend aún no expone `/watches`.
+- **Consecuencias:** La app funciona con backend, sin backend (fakes), y sin red (caché Room). El debug permite HTTP en LAN (`usesCleartextTraffic` en `src/debug`) para probar contra un backend local; release solo HTTPS.
+
