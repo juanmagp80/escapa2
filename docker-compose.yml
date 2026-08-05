@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: escapa2-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: escapa2
+      POSTGRES_PASSWORD: escapa2
+      POSTGRES_DB: escapa2
+    ports:
+      - "5432:5432"
+    volumes:
+      - escapa2_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U escapa2 -d escapa2"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  escapa2_pgdata:

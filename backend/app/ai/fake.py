@@ -1,0 +1,280 @@
+"""Deterministic rule-based AI provider for development and fallback."""
+
+from __future__ import annotations
+
+import re
+from datetime import date, timedelta
+
+from app.ai.schemas import (
+    Confidence,
+    InterpretSearchRequest,
+    InterpretSearchResponse,
+    ItineraryAiRequest,
+    ItineraryAiResponse,
+    ItineraryDay,
+    ItineraryItem,
+    OpportunitySummaryRequest,
+    OpportunitySummaryResponse,
+)
+from app.domain.enums import TransportMode
+
+_INTEREST_KEYWORDS: dict[str, tuple[str, ...]] = {
+    "playa": ("playa", "costa", "mar", "surf"),
+    "naturaleza": ("naturaleza", "parque", "senderismo", "ruta", "camping"),
+    "ciudad": ("ciudad", "urbano", "museos", "cultural"),
+    "montaña": ("montaña", "sierra", "pico", "esquí", "esqui"),
+    "gastronomía": ("gastronomía", "comer", "gastronomia", "restaurante", "tapas"),
+    "tranquilidad": ("tranquilidad", "tranquilo", "relax", "descansar", "escapada rural"),
+    "vida nocturna": ("fiesta", "nocturna", "discoteca", "bares", "conciertos"),
+}
+
+_ORIGIN_PATTERN = re.compile(
+    r"\b(?:desde|salimos?\s+(?:de|desde))\s+([a-záéíóúñüü\-]{2,40})",
+    re.IGNORECASE,
+)
+_BUDGET_PATTERN = re.compile(r"(\d{2,4})(?:\s*€|\s*eur(?:os)?)", re.IGNORECASE)
+_TRAVELERS_PATTERN = re.compile(
+    r"\b(?:para|somos)\s*(\d{1,2})\s*(?:personas?|viajeros?|adultos?)\b",
+    re.IGNORECASE,
+)
+_DRIVE_PATTERN = re.compile(
+    r"\b(?:máximo|max|hasta)\s*(\d{2,3})\s*(?:min|minutos)\b",
+    re.IGNORECASE,
+)
+_DATE_PATTERN = re.compile(
+    r"\b(\d{1,2})\s*(?:del|de|al|a|hasta|-)\s*(\d{1,2})\s*(?:de|del)?\s*([a-záéíóú]+)?\b",
+    re.IGNORECASE,
+)
+
+_MONTHS = {
+    "enero": 1,
+    "febrero": 2,
+    "marzo": 3,
+    "abril": 4,
+    "mayo": 5,
+    "junio": 6,
+    "julio": 7,
+    "agosto": 8,
+    "septiembre": 9,
+    "setiembre": 9,
+    "octubre": 10,
+    "noviembre": 11,
+    "diciembre": 12,
+}
+
+
+class FakeAiProvider:
+    """Produces explainable responses from rules, without external calls."""
+
+    async def summarize_opportunity(
+        self,
+        request: OpportunitySummaryRequest,
+    ) -> OpportunitySummaryResponse:
+        return _rule_based_summary(request)
+
+    async def interpret_search(
+        self,
+        request: InterpretSearchRequest,
+    ) -> InterpretSearchResponse:
+        return _rule_based_interpretation(request)
+
+    async def generate_itinerary(
+        self,
+        request: ItineraryAiRequest,
+    ) -> ItineraryAiResponse:
+        return _rule_based_itinerary(request)
+
+
+async def fallback_summary(
+    request: OpportunitySummaryRequest,
+) -> OpportunitySummaryResponse:
+    """Rule-based fallback used when the AI provider is unavailable."""
+    return _rule_based_summary(request)
+
+
+async def fallback_interpretation(
+    request: InterpretSearchRequest,
+) -> InterpretSearchResponse:
+    """Rule-based fallback for natural-language search interpretation."""
+    return _rule_based_interpretation(request)
+
+
+async def fallback_itinerary(
+    request: ItineraryAiRequest,
+) -> ItineraryAiResponse:
+    """Rule-based fallback for orientative itinerary generation."""
+    return _rule_based_itinerary(request)
+
+
+def _rule_based_summary(
+    request: OpportunitySummaryRequest,
+) -> OpportunitySummaryResponse:
+    difference = request.budget_eur - request.total_cost_eur
+
+    if difference >= 0:
+        headline = "Buena opción dentro del presupuesto"
+        pros: list[str] = [
+            f"Está {difference:.2f} EUR por debajo del presupuesto",
+            f"{request.travelers} viajeros, {request.useful_hours:.1f} horas útiles",
+        ]
+    else:
+        headline = "Por encima del presupuesto"
+        pros = [f"{request.travelers} viajeros, {request.useful_hours:.1f} horas útiles"]
+
+    cons: list[str] = []
+    if difference < 0:
+        cons.append(f"Excede el presupuesto en {-difference:.2f} EUR")
+
+    summary_parts = [
+        f"Oportunidad para {request.destination} con coste total de "
+        f"{request.total_cost_eur:.2f} EUR para {request.travelers} viajeros."
+    ]
+    if request.facts:
+        summary_parts.append("Hechos considerados: " + ", ".join(request.facts) + ".")
+    summary_parts.append("Estos precios están verificados a la hora indicada y pueden cambiar.")
+
+    for fact in request.facts:
+        if fact not in pros:
+            pros.append(fact)
+
+    return OpportunitySummaryResponse(
+        headline=headline,
+        summary=" ".join(summary_parts),
+        pros=pros[:6],
+        cons=cons,
+        confidence=Confidence.MEDIUM,
+        generated_by_ai=False,
+    )
+
+
+def _detect_interests(query: str) -> list[str]:
+    lower = query.lower()
+    detected: list[str] = []
+    for interest, keywords in _INTEREST_KEYWORDS.items():
+        if any(keyword in lower for keyword in keywords):
+            detected.append(interest)
+    return detected
+
+
+def _rule_based_interpretation(
+    request: InterpretSearchRequest,
+) -> InterpretSearchResponse:
+    query = request.query
+
+    origin_match = _ORIGIN_PATTERN.search(query)
+    origin_city = origin_match.group(1).strip().capitalize() if origin_match else None
+
+    budget_match = _BUDGET_PATTERN.search(query)
+    budget_eur = float(budget_match.group(1)) if budget_match else None
+
+    travelers_match = _TRAVELERS_PATTERN.search(query)
+    travelers = int(travelers_match.group(1)) if travelers_match else 2
+
+    drive_match = _DRIVE_PATTERN.search(query)
+    max_drive_minutes = int(drive_match.group(1)) if drive_match else None
+
+    lower = query.lower()
+    transport: TransportMode | None = None
+    if any(word in lower for word in ("coche", "conducir", "por carretera")):
+        transport = TransportMode.CAR
+    elif any(word in lower for word in ("avión", "avion", "vuelo", "volando", "aeropuerto")):
+        transport = TransportMode.FLIGHT
+
+    start_window: date | None = None
+    end_window: date | None = None
+    date_match = _DATE_PATTERN.search(query)
+    if date_match:
+        month = date_match.group(3)
+        month_number = _MONTHS.get((month or "").lower()) if month else None
+        try:
+            year = 2026
+            start_day = int(date_match.group(1))
+            end_day = int(date_match.group(2))
+            if month_number is not None and end_day >= start_day:
+                start_window = date(year, month_number, start_day)
+                end_window = date(year, month_number, end_day)
+        except ValueError:
+            start_window = None
+            end_window = None
+
+    duration_days: int | None = None
+    if start_window is not None and end_window is not None:
+        duration_days = (end_window - start_window).days
+
+    recognized = sum(
+        item is not None for item in (origin_city, budget_eur, transport, start_window)
+    )
+    if recognized >= 3:
+        confidence = Confidence.HIGH
+    elif recognized >= 1:
+        confidence = Confidence.MEDIUM
+    else:
+        confidence = Confidence.LOW
+
+    return InterpretSearchResponse(
+        origin_city=origin_city,
+        budget_eur=budget_eur,
+        travelers=travelers,
+        preferred_transport=transport,
+        interests=_detect_interests(query),
+        max_drive_minutes=max_drive_minutes,
+        start_window=start_window,
+        end_window=end_window,
+        duration_days=duration_days,
+        confidence=confidence,
+        generated_by_ai=False,
+    )
+
+
+def _rule_based_itinerary(request: ItineraryAiRequest) -> ItineraryAiResponse:
+    days: list[ItineraryDay] = []
+    current = request.start_date
+    index = 1
+    while current <= request.end_date:
+        items: list[ItineraryItem] = []
+        if request.interests:
+            interest = request.interests[0]
+            items.append(
+                ItineraryItem(
+                    start_time="10:00",
+                    end_time="12:00",
+                    title=f"Explorar la zona de interés: {interest}",
+                )
+            )
+        items.append(
+            ItineraryItem(
+                start_time="14:00",
+                end_time="15:30",
+                title="Comida local",
+            )
+        )
+        items.append(
+            ItineraryItem(
+                start_time="16:30",
+                end_time="18:30",
+                title="Paseo y tiempo libre",
+            )
+        )
+        days.append(
+            ItineraryDay(
+                date=current,
+                title=f"Día {index}",
+                items=items,
+            )
+        )
+        current += timedelta(days=1)
+        index += 1
+
+    return ItineraryAiResponse(
+        summary=(
+            f"Itinerario orientativo de {len(days)} días en {request.destination}. "
+            "Las actividades y horarios son una propuesta general, no una reserva."
+        ),
+        warnings=[
+            "Itinerario orientativo generado por reglas: confirma horarios, aperturas "
+            "y precios reales antes de planificar.",
+            "Los costes estimados no están incluidos porque no son datos verificados.",
+        ],
+        days=days,
+        generated_by_ai=False,
+    )
