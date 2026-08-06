@@ -8,12 +8,12 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Response, status
 
 from app.api.deps import get_search_watch_service
-from app.domain.opportunity import Opportunity
 from app.domain.search_watch import SearchWatch
 from app.services.search_watch_service import (
     SearchWatchCreate,
     SearchWatchService,
     SearchWatchUpdate,
+    WatchRunResult,
 )
 
 router = APIRouter(prefix="/watches", tags=["watches"])
@@ -66,10 +66,10 @@ def delete_watch(
     response.status_code = status.HTTP_204_NO_CONTENT
 
 
-@router.post("/{watch_id}/run", response_model=list[Opportunity])
+@router.post("/{watch_id}/run", response_model=WatchRunResult)
 def run_watch(
     watch_id: uuid.UUID,
     service: SearchWatchServiceDep,
-) -> list[Opportunity]:
-    """Simulate a scheduled run and return matching opportunities."""
+) -> WatchRunResult:
+    """Run a watch: record price snapshots and evaluate configured alerts."""
     return service.run(watch_id)

@@ -130,3 +130,10 @@ Este documento registra las decisiones arquitectónicas relevantes del proyecto.
 - **Decisión:** Se añade `DailyReportRequest`/`DailyReportResponse` (schema con `watches`, precios actual/anterior, mínimo registrado, presupuesto e historial), el método `generate_daily_report` al protocolo `AiProvider`, la implementación de reglas en `FakeAiProvider`/fallback (calcula bajada, porcentaje, nuevo mínimo y encaje en presupuesto) y la de Gemini con un prompt anclado en datos confirmados. `AiService` lo expone con la misma caché y cuota diaria que el resto de endpoints.
 - **Consecuencias:** El informe nunca inventa precios: solo resume los datos aportados. Las alertas y el scheduler reales que generen el historial de precios llegarán con el resto de la Fase 4.
 
+## ADR-019: El run de /watches registra snapshots y evalúa alertas
+
+- **Estado:** Aceptada.
+- **Contexto:** `POST /watches/{id}/run` solo refrescaba las marcas de tiempo y devolvía las oportunidades que coincidían con los criterios. AGENTS.md 16 define que cada ejecución del radar debe guardar snapshots, evaluar alertas y registrar el resultado; AGENTS.md 9.5 define las reglas de alerta.
+- **Decisión:** El `run` ahora guarda un `PriceSnapshot` por oportunidad coincidente (con `source_summary_json` indicando el `watch_id`) y evalúa las reglas de alerta humanas de `alert_rules_json["rules"]` mediante `parse_alert_rules` (umbral absoluto, % de bajada, bajada absoluta, nuevo mínimo, encaje en presupuesto) contra el historial real o el `initial_price_eur` del criterio. El contrato cambia a un `WatchRunResult` con `last_run_at`, `next_run_at`, `matched_opportunities` y `alerts`. Se añade `save_snapshots` al protocolo `OpportunityProvider` (mock y SQL ya lo soportan).
+- **Consecuencias:** El historial de precios crece con cada ejecución, alimentando el informe diario de IA y las futuras notificaciones FCM. El Android actual no consume `run`, por lo que el cambio de contrato no rompe la app.
+

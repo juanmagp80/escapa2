@@ -425,3 +425,9 @@ class MockOpportunityProvider:
             for snapshot in self._snapshots
             if snapshot.travel_opportunity_id == opportunity_id
         ]
+
+    def save_snapshots(self, snapshots: list[PriceSnapshot]) -> None:
+        existing_ids = {snapshot.id for snapshot in self._snapshots}
+        self._snapshots.extend(
+            snapshot for snapshot in snapshots if snapshot.id not in existing_ids
+        )

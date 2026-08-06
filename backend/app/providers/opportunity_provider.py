@@ -29,3 +29,7 @@ class OpportunityProvider(Protocol):
     ) -> list[PriceSnapshot]:
         """Return price snapshots for an opportunity, oldest first."""
         ...
+
+    def save_snapshots(self, snapshots: list[PriceSnapshot]) -> None:
+        """Persist new price snapshots (idempotent by snapshot id)."""
+        ...

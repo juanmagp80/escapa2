@@ -5,6 +5,7 @@ from __future__ import annotations
 from app.domain.alerts import (
     AlertRuleCode,
     evaluate_price_alerts,
+    parse_alert_rules,
 )
 
 
@@ -100,3 +101,34 @@ def test_alerts_include_explainable_messages() -> None:
     triggered = [item for item in result if item.triggered]
     assert len(triggered) >= 1
     assert all(item.message is not None for item in triggered)
+
+
+def test_parse_alert_rules_extracts_thresholds() -> None:
+    config = parse_alert_rules(
+        [
+            "Viaje por debajo de 350 EUR",
+            "Bajada superior a 10%",
+            "Bajada de 40 EUR",
+            "Nuevo mínimo histórico",
+            "Vuelve a estar dentro del presupuesto",
+        ]
+    )
+    assert config.below_threshold_eur == 350.0
+    assert config.percent_drop_threshold == 10.0
+    assert config.absolute_drop_threshold_eur == 40.0
+    assert config.new_low is True
+    assert config.budget_match is True
+
+
+def test_parse_alert_rules_ignores_unknown_rules() -> None:
+    config = parse_alert_rules(["Regla desconocida", "otra cosa"])
+    assert config.below_threshold_eur is None
+    assert config.percent_drop_threshold is None
+    assert config.new_low is False
+    assert config.budget_match is False
+
+
+def test_parse_alert_rules_handles_decimal_and_currency_variants() -> None:
+    config = parse_alert_rules(["Bajada de 4,5%", "por debajo de 300€"])
+    assert config.percent_drop_threshold == 4.5
+    assert config.below_threshold_eur == 300.0

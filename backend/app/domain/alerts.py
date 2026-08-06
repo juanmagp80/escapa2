@@ -6,6 +6,7 @@ events must not be sent twice (AGENTS.md 9.5 and 17).
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 
@@ -35,6 +36,99 @@ class AlertEvaluation:
     rule: str
     triggered: bool
     message: str | None = None
+
+
+@dataclass(frozen=True)
+class AlertConfig:
+    """Structured thresholds extracted from human-readable rule strings."""
+
+    below_threshold_eur: float | None = None
+    percent_drop_threshold: float | None = None
+    absolute_drop_threshold_eur: float | None = None
+    new_low: bool = False
+    budget_match: bool = False
+
+
+_BELOW_THRESHOLD_PATTERN = re.compile(
+    r"por debajo de\s*(\d+(?:[.,]\d+)?)\s*(?:€|eur(?:os)?)",
+    re.IGNORECASE,
+)
+_PERCENT_DROP_PATTERN = re.compile(
+    r"bajada(?: superior a| de)?\s*(\d+(?:[.,]\d+)?)\s*%",
+    re.IGNORECASE,
+)
+_ABSOLUTE_DROP_PATTERN = re.compile(
+    r"bajada(?:\s*de)?\s*(\d+(?:[.,]\d+)?)\s*(?:€|eur(?:os)?)",
+    re.IGNORECASE,
+)
+_NEW_LOW_PATTERN = re.compile(r"nuevo mínimo", re.IGNORECASE)
+_BUDGET_MATCH_PATTERN = re.compile(r"presupuesto", re.IGNORECASE)
+
+
+def parse_alert_rules(rules: list[str]) -> AlertConfig:
+    """Extract structured thresholds from human-readable rule strings.
+
+    Recognized rules (case-insensitive, Spanish):
+    - "Viaje por debajo de 350 EUR" -> below_threshold_eur.
+    - "Bajada superior a 10%" or "Bajada de 5%" -> percent_drop_threshold.
+    - "Bajada de 40 EUR" -> absolute_drop_threshold_eur.
+    - "Nuevo mínimo histórico/registrado" -> new_low.
+    - "Vuelve a estar dentro del presupuesto" -> budget_match.
+    """
+    config = AlertConfig()
+    for rule in rules:
+        below = _BELOW_THRESHOLD_PATTERN.search(rule)
+        if below:
+            config = AlertConfig(
+                below_threshold_eur=_to_float(below.group(1)),
+                percent_drop_threshold=config.percent_drop_threshold,
+                absolute_drop_threshold_eur=config.absolute_drop_threshold_eur,
+                new_low=config.new_low,
+                budget_match=config.budget_match,
+            )
+            continue
+        percent = _PERCENT_DROP_PATTERN.search(rule)
+        if percent:
+            config = AlertConfig(
+                below_threshold_eur=config.below_threshold_eur,
+                percent_drop_threshold=_to_float(percent.group(1)),
+                absolute_drop_threshold_eur=config.absolute_drop_threshold_eur,
+                new_low=config.new_low,
+                budget_match=config.budget_match,
+            )
+            continue
+        absolute = _ABSOLUTE_DROP_PATTERN.search(rule)
+        if absolute:
+            config = AlertConfig(
+                below_threshold_eur=config.below_threshold_eur,
+                percent_drop_threshold=config.percent_drop_threshold,
+                absolute_drop_threshold_eur=_to_float(absolute.group(1)),
+                new_low=config.new_low,
+                budget_match=config.budget_match,
+            )
+            continue
+        if _NEW_LOW_PATTERN.search(rule):
+            config = AlertConfig(
+                below_threshold_eur=config.below_threshold_eur,
+                percent_drop_threshold=config.percent_drop_threshold,
+                absolute_drop_threshold_eur=config.absolute_drop_threshold_eur,
+                new_low=True,
+                budget_match=config.budget_match,
+            )
+            continue
+        if _BUDGET_MATCH_PATTERN.search(rule):
+            config = AlertConfig(
+                below_threshold_eur=config.below_threshold_eur,
+                percent_drop_threshold=config.percent_drop_threshold,
+                absolute_drop_threshold_eur=config.absolute_drop_threshold_eur,
+                new_low=config.new_low,
+                budget_match=True,
+            )
+    return config
+
+
+def _to_float(value: str) -> float:
+    return float(value.replace(",", "."))
 
 
 def evaluate_price_alerts(

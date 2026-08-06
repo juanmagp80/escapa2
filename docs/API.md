@@ -479,7 +479,47 @@ Elimina un seguimiento. `204` en caso de éxito.
 
 ### `POST /watches/{id}/run`
 
-Ejecuta un seguimiento de forma simulada: refresca `last_run_at` y `next_run_at` y
-devuelve las oportunidades que coinciden con los criterios almacenados
-(`max_total_cost_eur` y `transport_mode`), filtradas sobre el proveedor de
-oportunidades actual.
+Ejecuta un seguimiento: refresca `last_run_at` y `next_run_at`, guarda un
+`PriceSnapshot` por cada oportunidad que coincide con los criterios almacenados
+(`max_total_cost_eur` y `transport_mode`) y evalúa las reglas de alerta
+configuradas en `alert_rules.rules` contra el historial de precios registrado.
+
+Reglas de alerta reconocidas (texto libre, sin distinguir mayúsculas):
+
+- `"Viaje por debajo de 350 EUR"` → umbral absoluto.
+- `"Bajada superior a 10%"` o `"Bajada de 5%"` → porcentaje de bajada.
+- `"Bajada de 40 EUR"` → bajada absoluta.
+- `"Nuevo mínimo histórico"` → nuevo mínimo registrado.
+- `"Vuelve a estar dentro del presupuesto"` → encaje en el presupuesto.
+
+El presupuesto y el precio inicial se toman de `criteria_json`
+(`budget_eur`/`max_total_cost_eur` y `initial_price_eur`). Si la oportunidad ya
+tiene historial, el `previous` y el mínimo se calculan de sus snapshots reales.
+
+Respuesta:
+
+```json
+{
+  "last_run_at": "2026-08-06T12:00:00Z",
+  "next_run_at": "2026-08-07T12:00:00Z",
+  "matched_opportunities": [
+    {
+      "id": "22222222-2222-4222-8222-222222222222",
+      "destination_code": "SVQ",
+      "destination_name": "Sevilla",
+      "transport_mode": "FLIGHT",
+      "total_cost_eur": 246.0
+    }
+  ],
+  "alerts": [
+    {
+      "rule": "new_low",
+      "message": "Nuevo mínimo histórico: 246 EUR"
+    }
+  ]
+}
+```
+
+La evaluación es idempotente por seguimiento y oportunidad: cada ejecución
+añade un snapshot nuevo con su propio UUID y `captured_at`, por lo que el
+historial crece de forma natural hacia el radar diario.
