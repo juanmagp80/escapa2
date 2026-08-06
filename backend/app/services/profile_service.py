@@ -11,8 +11,9 @@ from datetime import UTC, datetime
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from app.domain.enums import TransportMode
+from app.domain.enums import FuelType, TransportMode
 from app.domain.profile import AirportPreference, TravelProfile
+from app.domain.vehicles import VehicleProfile
 from app.providers.profile_provider import ProfileProvider
 
 
@@ -51,6 +52,25 @@ class AirportPreferenceInput(BaseModel):
     @classmethod
     def _uppercase_iata(cls, value: str) -> str:
         return value.strip().upper()
+
+
+class VehicleInput(BaseModel):
+    """Mutable fields accepted by PUT /profile/vehicle."""
+
+    name: str = Field(..., min_length=1, max_length=120)
+    fuel_type: FuelType = FuelType.GASOLINE
+    average_consumption_l_per_100km: float | None = Field(default=None, ge=0)
+    tank_capacity_l: float | None = Field(default=None, ge=0)
+    estimated_cost_per_km_eur: float | None = Field(default=None, ge=0)
+    max_fuel_detour_minutes: int = Field(default=15, ge=0)
+
+    @model_validator(mode="after")
+    def _require_consumption_for_fuel_vehicles(self) -> VehicleInput:
+        if self.fuel_type != FuelType.ELECTRIC and self.average_consumption_l_per_100km is None:
+            raise ValueError(
+                "average_consumption_l_per_100km is required for non-electric vehicles"
+            )
+        return self
 
 
 def _clean_strings(values: list[str]) -> list[str]:
@@ -99,3 +119,21 @@ class ProfileService:
             for airport in inputs
         ]
         return self._provider.save_airports(airports)
+
+    def get_vehicle(self) -> VehicleProfile:
+        return self._provider.get_vehicle()
+
+    def save_vehicle(self, changes: VehicleInput) -> VehicleProfile:
+        current = self._provider.get_vehicle()
+        updated = current.model_copy(
+            update={
+                "name": changes.name.strip(),
+                "fuel_type": changes.fuel_type,
+                "average_consumption_l_per_100km": changes.average_consumption_l_per_100km,
+                "tank_capacity_l": changes.tank_capacity_l,
+                "estimated_cost_per_km_eur": changes.estimated_cost_per_km_eur,
+                "max_fuel_detour_minutes": changes.max_fuel_detour_minutes,
+                "updated_at": datetime.now(UTC),
+            }
+        )
+        return self._provider.save_vehicle(updated)

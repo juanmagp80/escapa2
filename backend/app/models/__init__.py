@@ -14,6 +14,7 @@ from app.models.price_snapshot import PriceSnapshot
 from app.models.search_watch import SearchWatch
 from app.models.travel_opportunity import TravelOpportunity
 from app.models.travel_profile import TravelProfile
+from app.models.vehicle_profile import VehicleProfile
 
 __all__ = [
     "AirportPreference",
@@ -25,4 +26,5 @@ __all__ = [
     "SearchWatch",
     "TravelOpportunity",
     "TravelProfile",
+    "VehicleProfile",
 ]

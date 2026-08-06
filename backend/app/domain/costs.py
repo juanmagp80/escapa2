@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from app.domain.offers import RouteOffer
+
 
 @dataclass(frozen=True)
 class CostComponents:
@@ -95,3 +97,52 @@ class UsefulHoursBreakdown:
             - self.return_margin_hours
             - self.transit_back_hours,
         )
+
+
+def estimate_fuel_cost(
+    distance_km: float,
+    consumption_l_per_100km: float,
+    price_per_liter: float,
+) -> float | None:
+    """Fuel cost for a route leg, or None when inputs are invalid."""
+    if distance_km < 0 or consumption_l_per_100km < 0 or price_per_liter < 0:
+        return None
+    return round(distance_km * consumption_l_per_100km / 100 * price_per_liter, 2)
+
+
+def estimate_vehicle_wear(
+    distance_km: float,
+    cost_per_km_eur: float | None,
+) -> float | None:
+    """Wear cost for a route leg, or None when cost per km is unavailable."""
+    if cost_per_km_eur is None or distance_km < 0:
+        return None
+    return round(distance_km * cost_per_km_eur, 2)
+
+
+def route_cost_components(offer: RouteOffer) -> CostComponents:
+    """Convert a provider route offer into cost components.
+
+    The offer already carries fuel, toll, parking and wear costs, so this is a
+    1:1 mapping that keeps the cost model the single source of truth.
+    """
+    return CostComponents(
+        route_fuel_total=offer.fuel_cost_eur,
+        toll_total=offer.toll_cost_eur,
+        destination_parking_total=offer.parking_cost_eur,
+        vehicle_wear_total=offer.vehicle_wear_cost_eur,
+        known_taxes_and_fees=0.0,
+    )
+
+
+__all__ = [
+    "CostComponents",
+    "UsefulHoursBreakdown",
+    "cost_per_night",
+    "cost_per_person",
+    "cost_per_useful_hour",
+    "estimate_fuel_cost",
+    "estimate_vehicle_wear",
+    "route_cost_components",
+    "total_trip_cost",
+]

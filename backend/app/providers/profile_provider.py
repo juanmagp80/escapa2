@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Protocol
 
 from app.domain.profile import AirportPreference, TravelProfile
+from app.domain.vehicles import VehicleProfile
 
 
 class ProfileProvider(Protocol):
@@ -24,4 +25,12 @@ class ProfileProvider(Protocol):
 
     def save_airports(self, airports: list[AirportPreference]) -> list[AirportPreference]:
         """Replace the airport preferences and return the stored value."""
+        ...
+
+    def get_vehicle(self) -> VehicleProfile:
+        """Return the default vehicle of the couple."""
+        ...
+
+    def save_vehicle(self, vehicle: VehicleProfile) -> VehicleProfile:
+        """Persist the default vehicle and return the stored value."""
         ...

@@ -67,10 +67,11 @@
 
 ## Fase 5 — Coche
 
+- ✅ Perfil de vehículo (`GET/PUT /profile/vehicle`): `VehicleProfile` con `fuel_type` (`DIESEL`, `GASOLINE`, `HYBRID`, `ELECTRIC`), consumo, capacidad de depósito, coste por km y desvío máximo a gasolineras; validación (consumo obligatorio salvo eléctrico); mock, repositorio SQL con migración `0006_vehicle_profile` y tests.
+- ✅ Dominio de rutas y gasolineras: `RouteOffer`/`RouteRequest`/`FuelStation`/`FuelStationsRequest`, protocolos `RouteProvider` y `FuelPriceProvider` con `MockRouteProvider`/`MockFuelPriceProvider`, y funciones puras `estimate_fuel_cost`, `estimate_vehicle_wear`, `route_cost_components` y `recommend_fuel_stations` (ahorro neto).
 - Google Routes.
 - Coste de combustible.
 - Peajes.
-- Perfil de vehículo.
 - Gasolineras oficiales.
 
 ## Fase 6 — Pareja y personalización

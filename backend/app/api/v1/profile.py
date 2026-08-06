@@ -8,10 +8,12 @@ from fastapi import APIRouter, Depends
 
 from app.api.deps import get_profile_service
 from app.domain.profile import AirportPreference, TravelProfile
+from app.domain.vehicles import VehicleProfile
 from app.services.profile_service import (
     AirportPreferenceInput,
     ProfileService,
     ProfileUpdate,
+    VehicleInput,
 )
 
 router = APIRouter(prefix="/profile", tags=["profile"])
@@ -47,3 +49,18 @@ def replace_airports(
 ) -> list[AirportPreference]:
     """Replace the full list of accepted departure airports."""
     return service.replace_airports(airports)
+
+
+@router.get("/vehicle", response_model=VehicleProfile)
+def get_vehicle(service: ProfileServiceDep) -> VehicleProfile:
+    """Return the default vehicle used to estimate car-trip costs."""
+    return service.get_vehicle()
+
+
+@router.put("/vehicle", response_model=VehicleProfile)
+def save_vehicle(
+    changes: VehicleInput,
+    service: ProfileServiceDep,
+) -> VehicleProfile:
+    """Replace the mutable fields of the default vehicle."""
+    return service.save_vehicle(changes)

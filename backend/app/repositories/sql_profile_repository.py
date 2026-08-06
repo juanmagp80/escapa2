@@ -14,13 +14,16 @@ from datetime import UTC, datetime
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from app.domain.enums import TransportMode
+from app.domain.enums import FuelType, TransportMode
 from app.domain.profile import AirportPreference, TravelProfile
+from app.domain.vehicles import VehicleProfile
 from app.models.airport_preference import AirportPreference as AirportPreferenceORM
 from app.models.travel_profile import TravelProfile as TravelProfileORM
+from app.models.vehicle_profile import VehicleProfile as VehicleProfileORM
 from app.repositories._util import as_utc
 
 _DEV_PROFILE_ID = uuid.UUID("00000000-0000-4000-8000-000000000001")
+_DEV_VEHICLE_ID = uuid.UUID("00000000-0000-4000-8000-000000000004")
 
 
 def _build_dev_profile() -> TravelProfile:
@@ -34,6 +37,22 @@ def _build_dev_profile() -> TravelProfile:
         preferred_transport=TransportMode.EITHER,
         interests=["ciudad", "gastronomía"],
         avoid_preferences=["vida nocturna"],
+        created_at=now,
+        updated_at=now,
+    )
+
+
+def _build_dev_vehicle() -> VehicleProfile:
+    now = datetime.now(UTC)
+    return VehicleProfile(
+        id=_DEV_VEHICLE_ID,
+        travel_profile_id=_DEV_PROFILE_ID,
+        name="Coche habitual",
+        fuel_type=FuelType.DIESEL,
+        average_consumption_l_per_100km=6.0,
+        tank_capacity_l=55.0,
+        estimated_cost_per_km_eur=0.10,
+        max_fuel_detour_minutes=15,
         created_at=now,
         updated_at=now,
     )
@@ -145,6 +164,54 @@ class SqlProfileRepository:
             session.commit()
             return airports
 
+    def get_vehicle(self) -> VehicleProfile:
+        with self._session_factory() as session:
+            profile = session.execute(select(TravelProfileORM)).scalars().first()
+            if profile is None:
+                self._ensure_profile(session, _build_dev_profile())
+                vehicle = _build_dev_vehicle()
+                self._ensure_vehicle(session, vehicle)
+                session.commit()
+                return vehicle
+            row = (
+                session.execute(
+                    select(VehicleProfileORM).where(
+                        VehicleProfileORM.travel_profile_id == profile.id
+                    )
+                )
+                .scalars()
+                .first()
+            )
+            if row is None:
+                vehicle = _build_dev_vehicle()
+                vehicle = vehicle.model_copy(update={"travel_profile_id": profile.id})
+                self._ensure_vehicle(session, vehicle)
+                session.commit()
+                return vehicle
+            return self._to_vehicle_domain(row)
+
+    def save_vehicle(self, vehicle: VehicleProfile) -> VehicleProfile:
+        with self._session_factory() as session:
+            row = (
+                session.execute(select(VehicleProfileORM).where(VehicleProfileORM.id == vehicle.id))
+                .scalars()
+                .first()
+            )
+            if row is None:
+                self._ensure_vehicle(session, vehicle)
+                session.commit()
+                return vehicle
+            row.name = vehicle.name
+            row.fuel_type = vehicle.fuel_type.value
+            row.average_consumption_l_per_100km = vehicle.average_consumption_l_per_100km
+            row.tank_capacity_l = vehicle.tank_capacity_l
+            row.estimated_cost_per_km_eur = vehicle.estimated_cost_per_km_eur
+            row.max_fuel_detour_minutes = vehicle.max_fuel_detour_minutes
+            row.updated_at = vehicle.updated_at
+            session.commit()
+            session.refresh(row)
+            return self._to_vehicle_domain(row)
+
     @staticmethod
     def _ensure_profile(session: Session, profile: TravelProfile) -> None:
         session.add(
@@ -175,6 +242,38 @@ class SqlProfileRepository:
                     transfer_minutes=airport.transfer_minutes,
                 )
             )
+
+    @staticmethod
+    def _ensure_vehicle(session: Session, vehicle: VehicleProfile) -> None:
+        session.add(
+            VehicleProfileORM(
+                id=vehicle.id,
+                travel_profile_id=vehicle.travel_profile_id,
+                name=vehicle.name,
+                fuel_type=vehicle.fuel_type.value,
+                average_consumption_l_per_100km=vehicle.average_consumption_l_per_100km,
+                tank_capacity_l=vehicle.tank_capacity_l,
+                estimated_cost_per_km_eur=vehicle.estimated_cost_per_km_eur,
+                max_fuel_detour_minutes=vehicle.max_fuel_detour_minutes,
+                created_at=vehicle.created_at,
+                updated_at=vehicle.updated_at,
+            )
+        )
+
+    @staticmethod
+    def _to_vehicle_domain(row: VehicleProfileORM) -> VehicleProfile:
+        return VehicleProfile(
+            id=row.id,
+            travel_profile_id=row.travel_profile_id,
+            name=row.name,
+            fuel_type=FuelType(row.fuel_type),
+            average_consumption_l_per_100km=row.average_consumption_l_per_100km,
+            tank_capacity_l=row.tank_capacity_l,
+            estimated_cost_per_km_eur=row.estimated_cost_per_km_eur,
+            max_fuel_detour_minutes=row.max_fuel_detour_minutes,
+            created_at=as_utc(row.created_at),
+            updated_at=as_utc(row.updated_at),
+        )
 
     @staticmethod
     def _to_domain(row: TravelProfileORM) -> TravelProfile:

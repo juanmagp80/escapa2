@@ -9,6 +9,7 @@ from app.services.profile_service import (
     AirportPreferenceInput,
     ProfileService,
     ProfileUpdate,
+    VehicleInput,
 )
 from fastapi.testclient import TestClient
 
@@ -123,3 +124,77 @@ def test_service_replaces_airports() -> None:
     stored = service.get_airports()
     assert len(stored) == 2
     assert all(airport.id is not None for airport in stored)
+
+
+def test_get_vehicle_returns_default(client: TestClient) -> None:
+    response = client.get("/api/v1/profile/vehicle")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["name"] == "Coche habitual"
+    assert body["fuel_type"] == "DIESEL"
+    assert body["average_consumption_l_per_100km"] == 6.0
+    assert body["tank_capacity_l"] == 55.0
+    assert body["travel_profile_id"] == PROFILE_ID
+
+
+def test_put_vehicle_updates_mutable_fields(client: TestClient) -> None:
+    payload = {
+        "name": "Furgoneta",
+        "fuel_type": "GASOLINE",
+        "average_consumption_l_per_100km": 8.5,
+        "tank_capacity_l": 60.0,
+        "estimated_cost_per_km_eur": 0.14,
+        "max_fuel_detour_minutes": 20,
+    }
+    response = client.put("/api/v1/profile/vehicle", json=payload)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["name"] == "Furgoneta"
+    assert body["fuel_type"] == "GASOLINE"
+    assert body["average_consumption_l_per_100km"] == 8.5
+    assert body["max_fuel_detour_minutes"] == 20
+
+
+def test_put_vehicle_electric_allows_missing_consumption(client: TestClient) -> None:
+    payload = {
+        "name": "Coche eléctrico",
+        "fuel_type": "ELECTRIC",
+        "estimated_cost_per_km_eur": 0.05,
+    }
+    response = client.put("/api/v1/profile/vehicle", json=payload)
+    assert response.status_code == 200
+    assert response.json()["fuel_type"] == "ELECTRIC"
+    assert response.json()["average_consumption_l_per_100km"] is None
+
+
+def test_put_vehicle_requires_consumption_for_fuel_vehicles(client: TestClient) -> None:
+    payload = {
+        "name": "Coche",
+        "fuel_type": "DIESEL",
+    }
+    response = client.put("/api/v1/profile/vehicle", json=payload)
+    assert response.status_code == 422
+
+
+def test_put_vehicle_unknown_fuel_type_is_rejected(client: TestClient) -> None:
+    payload = {
+        "name": "Coche",
+        "fuel_type": "GAS",
+    }
+    response = client.put("/api/v1/profile/vehicle", json=payload)
+    assert response.status_code == 422
+
+
+def test_service_preserves_vehicle_identity() -> None:
+    service = ProfileService(MockProfileProvider())
+    original = service.get_vehicle()
+    updated = service.save_vehicle(
+        VehicleInput(
+            name="Nuevo",
+            fuel_type="DIESEL",
+            average_consumption_l_per_100km=7.0,
+        )
+    )
+    assert updated.id == original.id
+    assert updated.travel_profile_id == original.travel_profile_id
+    assert updated.updated_at >= original.updated_at

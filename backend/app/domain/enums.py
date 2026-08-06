@@ -40,3 +40,10 @@ class NotificationStatus(StrEnum):
     SENT = "SENT"
     SKIPPED = "SKIPPED"
     FAILED = "FAILED"
+
+
+class FuelType(StrEnum):
+    DIESEL = "DIESEL"
+    GASOLINE = "GASOLINE"
+    HYBRID = "HYBRID"
+    ELECTRIC = "ELECTRIC"

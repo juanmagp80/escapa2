@@ -128,6 +128,92 @@ Entrada:
 ]
 ```
 
+### `GET /profile/vehicle`
+
+Devuelve el vehículo por defecto de la pareja, usado para estimar los costes de
+coche (combustible, desvíos a gasolineras y desgaste). Si no existe, se crea uno
+de desarrollo igual que el resto del perfil.
+
+```json
+{
+  "id": "00000000-0000-4000-8000-000000000004",
+  "travel_profile_id": "00000000-0000-4000-8000-000000000001",
+  "name": "Coche habitual",
+  "fuel_type": "DIESEL",
+  "average_consumption_l_per_100km": 6.0,
+  "tank_capacity_l": 55.0,
+  "estimated_cost_per_km_eur": 0.1,
+  "max_fuel_detour_minutes": 15,
+  "created_at": "2026-08-07T12:00:00Z",
+  "updated_at": "2026-08-07T12:00:00Z"
+}
+```
+
+`fuel_type` acepta `DIESEL`, `GASOLINE`, `HYBRID` o `ELECTRIC`. Para vehículos de
+combustible `average_consumption_l_per_100km` es obligatorio; en eléctricos se
+omite.
+
+### `PUT /profile/vehicle`
+
+Reemplaza los campos editables del vehículo por defecto.
+
+Entrada:
+
+```json
+{
+  "name": "Coche habitual",
+  "fuel_type": "GASOLINE",
+  "average_consumption_l_per_100km": 6.5,
+  "tank_capacity_l": 50.0,
+  "estimated_cost_per_km_eur": 0.12,
+  "max_fuel_detour_minutes": 20
+}
+```
+
+Se devuelve un `422` si falta `average_consumption_l_per_100km` en un vehículo
+no eléctrico o si el `fuel_type` no es válido.
+
+### `GET /profile/vehicle`
+
+Devuelve el vehículo por defecto de la pareja, usado para estimar los costes de
+coche (combustible, peajes, aparcamiento y desgaste en las rutas). Si no existe,
+se crea uno de desarrollo.
+
+```json
+{
+  "id": "00000000-0000-4000-8000-000000000004",
+  "travel_profile_id": "00000000-0000-4000-8000-000000000001",
+  "name": "Coche habitual",
+  "fuel_type": "DIESEL",
+  "average_consumption_l_per_100km": 6.0,
+  "tank_capacity_l": 55.0,
+  "estimated_cost_per_km_eur": 0.1,
+  "max_fuel_detour_minutes": 15,
+  "created_at": "2026-08-07T12:00:00Z",
+  "updated_at": "2026-08-07T12:00:00Z"
+}
+```
+
+`fuel_type` acepta `DIESEL`, `GASOLINE`, `HYBRID` o `ELECTRIC`. Para vehículos de
+combustible `average_consumption_l_per_100km` es obligatorio.
+
+### `PUT /profile/vehicle`
+
+Reemplaza los campos editables del vehículo por defecto.
+
+Entrada:
+
+```json
+{
+  "name": "Furgoneta",
+  "fuel_type": "GASOLINE",
+  "average_consumption_l_per_100km": 7.5,
+  "tank_capacity_l": 60.0,
+  "estimated_cost_per_km_eur": 0.14,
+  "max_fuel_detour_minutes": 20
+}
+```
+
 ## Disponibilidad
 
 Base: `/api/v1/availability`.

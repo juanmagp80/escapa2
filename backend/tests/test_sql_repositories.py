@@ -12,7 +12,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from app.db.base import Base
 from app.domain.availability import AvailabilityWindow
-from app.domain.enums import TransportMode, WindowKind
+from app.domain.enums import FuelType, TransportMode, WindowKind
 from app.domain.opportunity import Opportunity, PriceSnapshot
 from app.domain.profile import AirportPreference
 from app.repositories.seed import seed_reference_opportunities
@@ -99,6 +99,34 @@ def test_profile_repository_replaces_airports(session_factory) -> None:
     reloaded = repository.get_airports()
     assert {airport.iata_code for airport in reloaded} == {"AGP", "SVQ"}
     assert reloaded[0].transfer_cost_eur == 25.0
+
+
+def test_profile_repository_creates_and_updates_vehicle(session_factory) -> None:
+    repository = SqlProfileRepository(session_factory)
+    initial = repository.get_vehicle()
+
+    assert initial.name == "Coche habitual"
+    assert initial.fuel_type == FuelType.DIESEL
+    assert initial.travel_profile_id == PROFILE_ID
+
+    updated = repository.save_vehicle(
+        initial.model_copy(
+            update={
+                "name": "Furgoneta",
+                "fuel_type": FuelType.GASOLINE,
+                "average_consumption_l_per_100km": 8.5,
+                "tank_capacity_l": 60.0,
+                "estimated_cost_per_km_eur": 0.14,
+                "updated_at": datetime.now(UTC),
+            }
+        )
+    )
+
+    assert updated.name == "Furgoneta"
+    reloaded = repository.get_vehicle()
+    assert reloaded.name == "Furgoneta"
+    assert reloaded.fuel_type == FuelType.GASOLINE
+    assert reloaded.average_consumption_l_per_100km == 8.5
 
 
 def test_availability_repository_crud(session_factory) -> None:

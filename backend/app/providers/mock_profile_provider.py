@@ -5,14 +5,31 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
-from app.domain.enums import TransportMode
+from app.domain.enums import FuelType, TransportMode
 from app.domain.profile import AirportPreference, TravelProfile
+from app.domain.vehicles import VehicleProfile
 
 _DEV_PROFILE_ID = uuid.UUID("00000000-0000-4000-8000-000000000001")
+_DEV_VEHICLE_ID = uuid.UUID("00000000-0000-4000-8000-000000000004")
 
 
 def _utc_now() -> datetime:
     return datetime.now(UTC)
+
+
+def _build_dev_vehicle(now: datetime) -> VehicleProfile:
+    return VehicleProfile(
+        id=_DEV_VEHICLE_ID,
+        travel_profile_id=_DEV_PROFILE_ID,
+        name="Coche habitual",
+        fuel_type=FuelType.DIESEL,
+        average_consumption_l_per_100km=6.0,
+        tank_capacity_l=55.0,
+        estimated_cost_per_km_eur=0.10,
+        max_fuel_detour_minutes=15,
+        created_at=now,
+        updated_at=now,
+    )
 
 
 class MockProfileProvider:
@@ -32,6 +49,7 @@ class MockProfileProvider:
             created_at=now,
             updated_at=now,
         )
+        self._vehicle = _build_dev_vehicle(now)
         self._airports: list[AirportPreference] = [
             AirportPreference(
                 id=uuid.UUID("00000000-0000-4000-8000-000000000002"),
@@ -64,3 +82,10 @@ class MockProfileProvider:
     def save_airports(self, airports: list[AirportPreference]) -> list[AirportPreference]:
         self._airports = [airport.model_copy(deep=True) for airport in airports]
         return self.get_airports()
+
+    def get_vehicle(self) -> VehicleProfile:
+        return self._vehicle.model_copy(deep=True)
+
+    def save_vehicle(self, vehicle: VehicleProfile) -> VehicleProfile:
+        self._vehicle = vehicle.model_copy(deep=True)
+        return self._vehicle.model_copy(deep=True)
