@@ -27,3 +27,14 @@ services:
 
       - key: GEMINI_MODEL
         value: gemini-3.6-flash
+
+      - key: FIREBASE_ENABLED
+        value: "true"
+
+      - key: FIREBASE_PROJECT_ID
+        value: escapa2-e0196
+
+      # Paste the full content of the Firebase service account JSON in the
+      # dashboard when prompted (write-only secret, never committed).
+      - key: FIREBASE_CREDENTIALS_JSON
+        sync: false
