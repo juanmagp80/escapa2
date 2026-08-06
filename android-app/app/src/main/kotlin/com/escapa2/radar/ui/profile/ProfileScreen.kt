@@ -1,5 +1,10 @@
 package com.escapa2.radar.ui.profile
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,18 +32,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.escapa2.radar.R
 import com.escapa2.radar.data.model.AirportPreference
 import com.escapa2.radar.data.model.TransportMode
 import com.escapa2.radar.ui.components.UiState
+import kotlinx.coroutines.launch
 
 private val INTEREST_OPTIONS = listOf(
     R.string.profile_interest_city to "ciudad",
@@ -70,6 +79,33 @@ fun ProfileScreen(
 
     LaunchedSaveFeedback(saveState, snackbarHostState)
 
+    val context = LocalContext.current
+    val permissionDeniedMessage = stringResource(R.string.profile_notifications_denied)
+    val snackbarScope = rememberCoroutineScope()
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) {
+            notificationViewModel.setNotificationsEnabled(true)
+        } else {
+            snackbarScope.launch { snackbarHostState.showSnackbar(permissionDeniedMessage) }
+        }
+    }
+    val onNotificationsChange: (Boolean) -> Unit = { enabled ->
+        if (enabled) {
+            val granted = Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(
+                context, Manifest.permission.POST_NOTIFICATIONS,
+            ) == PackageManager.PERMISSION_GRANTED
+            if (granted) {
+                notificationViewModel.setNotificationsEnabled(true)
+            } else {
+                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        } else {
+            notificationViewModel.setNotificationsEnabled(false)
+        }
+    }
+
     Scaffold(
         topBar = { TopAppBar(title = { Text(stringResource(R.string.profile_title)) }) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -94,7 +130,7 @@ fun ProfileScreen(
                 onRemoveAirport = viewModel::removeAirport,
                 onAddAirport = viewModel::addAirport,
                 notificationsEnabled = notificationsEnabled,
-                onNotificationsChange = notificationViewModel::setNotificationsEnabled,
+                onNotificationsChange = onNotificationsChange,
                 onSave = viewModel::save,
                 modifier = Modifier.padding(padding),
             )

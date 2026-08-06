@@ -19,6 +19,8 @@ from app.providers.notification_log_repository import NotificationLogRepository
 from app.providers.notification_sender import NotificationSender
 from app.services.search_watch_service import WatchRunAlert
 
+RADAR_ALERT_DEEP_LINK = "escapa2://radar"
+
 
 def notification_type_for_rule(rule: str) -> NotificationType:
     """Map a stable alert rule code to a notification type."""
@@ -92,7 +94,11 @@ class NotificationService:
                 tokens,
                 title[:200],
                 body[:500],
-                data={"watch_id": str(watch.id), "kind": "RADAR_ALERT"},
+                data={
+                    "watch_id": str(watch.id),
+                    "kind": "RADAR_ALERT",
+                    "deep_link": RADAR_ALERT_DEEP_LINK,
+                },
             )
         except Exception:  # noqa: BLE001 - delivery failures must not break the radar
             sent_count = 0

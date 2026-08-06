@@ -609,7 +609,9 @@ token real de Firebase.
 
 Al ejecutar el radar (`POST /watches/{id}/run` o el scheduler), si el seguimiento
 genera alertas se envía **un solo mensaje por seguimiento** a todos los tokens
-registrados del usuario, con un resumen de las alertas disparadas. Cada alerta se
+registrados del usuario, con un resumen de las alertas disparadas. El payload
+FCM incluye `watch_id`, `kind` (`RADAR_ALERT`) y `deep_link` (`escapa2://radar`)
+para que al tocar la notificación la app abra la pantalla Radar. Cada alerta se
 registra individualmente en el log con estado `SENT`, `SKIPPED` o `FAILED`.
 
 Tipos de notificación según la regla:

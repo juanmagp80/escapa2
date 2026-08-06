@@ -63,6 +63,7 @@
 - ✅ Scheduler notifica tras cada ejecución del radar (alerta → push) sin romper la ejecución si el envío falla.
 - ✅ Android registra el dispositivo en el backend (`POST /devices`): token estable por instalación (SharedPreferences), repositorio con fallback local, auto-registro al arrancar si está activado e interruptor "Notificaciones push" en Perfil. Cuando exista Firebase configurado, el token se sustituirá por el real de FCM.
 - ✅ FCM real: plugin `google-services` + `firebase-bom`/`firebase-messaging`, `FcmDeviceTokenProvider` que expone el token real y su refresco, `Escapa2MessagingService.onNewToken` que lo re-registra, y backend con `FIREBASE_ENABLED=true` usando `FirebaseNotificationSender` (firebase-admin en `requirements.txt`). Proyecto Firebase `escapa2-e0196`.
+- ✅ Notificaciones de extremo a extremo: el backend incluye `deep_link` (`escapa2://radar`) en el payload FCM; `Escapa2MessagingService.onMessageReceived` muestra la notificación también en primer plano (canal `radar_alerts`) y al tocar abre la pantalla Radar mediante deep link (`singleTask` + intent-filter `escapa2://radar` + `navController.handleDeepLink`); Perfil pide el permiso `POST_NOTIFICATIONS` (Android 13+) al activar el interruptor.
 
 ## Fase 5 — Coche
 

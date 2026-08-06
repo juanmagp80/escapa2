@@ -22,7 +22,7 @@ class RecordingSender:
     """Records delivered notifications for assertions."""
 
     def __init__(self) -> None:
-        self.calls: list[tuple[list[str], str, str]] = []
+        self.calls: list[tuple[list[str], str, str, dict[str, str]]] = []
         self.fail = False
 
     def send(
@@ -35,7 +35,7 @@ class RecordingSender:
     ) -> int:
         if self.fail:
             raise RuntimeError("push backend down")
-        self.calls.append((list(device_tokens), title, body))
+        self.calls.append((list(device_tokens), title, body, data or {}))
         return len(device_tokens)
 
 
@@ -100,6 +100,9 @@ def test_notify_watch_run_sends_and_logs() -> None:
     assert len(sender.calls) == 1
     assert sender.calls[0][0] == ["token-abc-123"]
     assert "Porto en avión" in sender.calls[0][1]
+    assert sender.calls[0][3]["kind"] == "RADAR_ALERT"
+    assert sender.calls[0][3]["watch_id"] == str(watch.id)
+    assert sender.calls[0][3]["deep_link"] == "escapa2://radar"
     assert len(entries) == 1
     assert entries[0].status == NotificationStatus.SENT
     assert entries[0].type == NotificationType.NEW_LOW
