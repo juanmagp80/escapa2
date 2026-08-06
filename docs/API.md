@@ -379,3 +379,49 @@ Historial de precios de una oportunidad, ordenado de más antiguo a más recient
   }
 ]
 ```
+
+## Seguimientos (Radar)
+
+Base: `/api/v1/watches`.
+
+Durante el vertical slice los datos provienen de `MockSearchWatchProvider` con dos
+seguimientos de referencia. `criteria_json` y `alert_rules_json` son objetos JSON
+libres; la app Android usa `initial_price_eur` en los criterios y `rules` (array de
+strings) en las reglas de alerta.
+
+### `GET /watches`
+
+Lista los seguimientos activos.
+
+### `POST /watches`
+
+Crea un seguimiento.
+
+```json
+{
+  "name": "Roma en avión",
+  "status": "ACTIVE",
+  "criteria": { "max_total_cost_eur": 400, "transport_mode": "FLIGHT" },
+  "alert_rules": { "rules": ["Nuevo mínimo histórico"] }
+}
+```
+
+### `GET /watches/{id}`
+
+Detalle de un seguimiento. `404` con `NOT_FOUND` si no existe.
+
+### `PUT /watches/{id}`
+
+Actualiza campos opcionales (`name`, `status`, `criteria`, `alert_rules`). Solo se
+aplican los campos presentes.
+
+### `DELETE /watches/{id}`
+
+Elimina un seguimiento. `204` en caso de éxito.
+
+### `POST /watches/{id}/run`
+
+Ejecuta un seguimiento de forma simulada: refresca `last_run_at` y `next_run_at` y
+devuelve las oportunidades que coinciden con los criterios almacenados
+(`max_total_cost_eur` y `transport_mode`), filtradas sobre el proveedor de
+oportunidades actual.

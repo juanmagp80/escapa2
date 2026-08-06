@@ -20,3 +20,8 @@ class Confidence(StrEnum):
 class WindowKind(StrEnum):
     WEEKEND = "WEEKEND"
     VACATION = "VACATION"
+
+
+class WatchStatus(StrEnum):
+    ACTIVE = "ACTIVE"
+    PAUSED = "PAUSED"

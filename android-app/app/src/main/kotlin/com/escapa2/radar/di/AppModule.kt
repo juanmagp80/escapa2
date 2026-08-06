@@ -15,11 +15,13 @@ import com.escapa2.radar.data.repository.FakeSearchWatchRepository
 import com.escapa2.radar.data.repository.FallbackAiRepository
 import com.escapa2.radar.data.repository.FallbackOpportunityRepository
 import com.escapa2.radar.data.repository.FallbackProfileRepository
+import com.escapa2.radar.data.repository.FallbackSearchWatchRepository
 import com.escapa2.radar.data.repository.OpportunityRepository
 import com.escapa2.radar.data.repository.ProfileRepository
 import com.escapa2.radar.data.repository.RemoteAiRepository
 import com.escapa2.radar.data.repository.RemoteOpportunityRepository
 import com.escapa2.radar.data.repository.RemoteProfileRepository
+import com.escapa2.radar.data.repository.RemoteSearchWatchRepository
 import com.escapa2.radar.data.repository.SearchWatchRepository
 import dagger.Module
 import dagger.Provides
@@ -70,8 +72,10 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideSearchWatchRepository(source: FakeSearchWatchRepository): SearchWatchRepository =
-        source
+    fun provideSearchWatchRepository(
+        api: Escapa2Api,
+        fallback: FakeSearchWatchRepository,
+    ): SearchWatchRepository = FallbackSearchWatchRepository(RemoteSearchWatchRepository(api), fallback)
 
     @Provides
     @Singleton

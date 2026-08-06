@@ -82,7 +82,7 @@ La URL base se inyecta en `BuildConfig.API_BASE_URL` desde la propiedad Gradle `
 
 El debug build permite HTTP local (`usesCleartextTraffic` en `src/debug`); release solo HTTPS.
 
-La app usa repositorios remotos con fallback automático a datos fake si el backend no responde, y caché Room si no hay red. El Radar (seguimientos) sigue con datos fake hasta que el backend exponga `/watches`.
+La app usa repositorios remotos con fallback automático a datos fake si el backend no responde, y caché Room si no hay red. El backend ya expone `/watches`, por lo que el Radar también consume la API real (con fallback a fakes).
 
 ## Despliegue (Render)
 

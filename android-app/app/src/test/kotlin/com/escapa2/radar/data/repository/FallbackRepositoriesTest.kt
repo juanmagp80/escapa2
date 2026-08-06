@@ -3,6 +3,7 @@ package com.escapa2.radar.data.repository
 import com.escapa2.radar.data.model.AiSummary
 import com.escapa2.radar.data.model.Opportunity
 import com.escapa2.radar.data.model.OpportunitySearchFilters
+import com.escapa2.radar.data.model.SearchWatch
 import com.escapa2.radar.data.model.TransportMode
 import com.escapa2.radar.data.model.TravelProfile
 import java.io.IOException
@@ -65,6 +66,17 @@ class FallbackRepositoriesTest {
 
         runBlocking {
             assertEquals("FakeCity", fallback.getProfile().originCity)
+        }
+    }
+
+    @Test
+    fun searchWatchRepositoryFallsBackOnIOException() {
+        val remote = FailingSearchWatchRepository(IOException("no network"))
+        val fallback = FallbackSearchWatchRepository(remote, LocalSearchWatchRepository())
+
+        runBlocking {
+            assertEquals("FakeWatch", fallback.getWatches().first().name)
+            assertEquals("created-1", fallback.createWatch("Nuevo", 300.0).id)
         }
     }
 
@@ -131,6 +143,21 @@ class FallbackRepositoriesTest {
         override suspend fun saveProfile(profile: TravelProfile): TravelProfile = profile
     }
 
+    private inner class FailingSearchWatchRepository(
+        private val error: Throwable,
+    ) : SearchWatchRepository {
+        override suspend fun getWatches(): List<SearchWatch> = throw error
+        override suspend fun createWatch(name: String, initialPriceEur: Double): SearchWatch = throw error
+    }
+
+    private inner class LocalSearchWatchRepository : SearchWatchRepository {
+        override suspend fun getWatches(): List<SearchWatch> =
+            listOf(localWatch)
+
+        override suspend fun createWatch(name: String, initialPriceEur: Double): SearchWatch =
+            localWatch.copy(id = "created-1", name = name)
+    }
+
     companion object {
         private val sampleOpportunity = Opportunity(
             id = "opp-1",
@@ -154,6 +181,18 @@ class FallbackRepositoriesTest {
             cons = emptyList(),
             confidence = "LOW",
             generatedByAi = false,
+        )
+
+        private val localWatch = SearchWatch(
+            id = "watch-local",
+            name = "FakeWatch",
+            status = "ACTIVE",
+            lastRunAt = "2026-08-05T12:00:00Z",
+            nextRunAt = "2026-08-06T12:00:00Z",
+            changeSinceYesterdayEur = null,
+            minRecordedEur = 300.0,
+            alertRules = emptyList(),
+            priceHistory = emptyList(),
         )
     }
 }

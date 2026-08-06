@@ -10,22 +10,28 @@ from app.providers.availability_provider import AvailabilityProvider
 from app.providers.mock_availability_provider import MockAvailabilityProvider
 from app.providers.mock_opportunity_provider import MockOpportunityProvider
 from app.providers.mock_profile_provider import MockProfileProvider
+from app.providers.mock_search_watch_provider import MockSearchWatchProvider
 from app.providers.opportunity_provider import OpportunityProvider
 from app.providers.profile_provider import ProfileProvider
+from app.providers.search_watch_provider import SearchWatchProvider
 from app.repositories.seed import seed_reference_opportunities
 from app.repositories.sql_availability_repository import SqlAvailabilityRepository
 from app.repositories.sql_opportunity_repository import SqlOpportunityRepository
 from app.repositories.sql_profile_repository import SqlProfileRepository
+from app.repositories.sql_search_watch_repository import SqlSearchWatchRepository
 from app.services.ai_service import AiService
 from app.services.availability_service import AvailabilityService
 from app.services.opportunity_service import OpportunityService
 from app.services.profile_service import ProfileService
+from app.services.search_watch_service import SearchWatchService
 
 _ai_provider: AiProvider | None = None
 _ai_service: AiService | None = None
 _opportunity_provider: OpportunityProvider | None = None
 _profile_provider: ProfileProvider | None = None
 _availability_provider: AvailabilityProvider | None = None
+_search_watch_provider: SearchWatchProvider | None = None
+_search_watch_service: SearchWatchService | None = None
 
 
 def get_ai_provider() -> AiProvider:
@@ -112,3 +118,30 @@ def get_availability_provider() -> AvailabilityProvider:
 def get_availability_service() -> AvailabilityService:
     """Return the availability application service."""
     return AvailabilityService(get_availability_provider())
+
+
+def get_search_watch_provider() -> SearchWatchProvider:
+    """Return a process-wide search watch provider instance.
+
+    Uses the mock provider by default. When ``PERSISTENCE_BACKEND=sql`` it uses
+    the database.
+    """
+    global _search_watch_provider
+    if _search_watch_provider is None:
+        settings = get_settings()
+        if settings.uses_sql_persistence:
+            _search_watch_provider = SqlSearchWatchRepository(SessionLocal)
+        else:
+            _search_watch_provider = MockSearchWatchProvider()
+    return _search_watch_provider
+
+
+def get_search_watch_service() -> SearchWatchService:
+    """Return the search watch application service."""
+    global _search_watch_service
+    if _search_watch_service is None:
+        _search_watch_service = SearchWatchService(
+            get_search_watch_provider(),
+            get_opportunity_provider(),
+        )
+    return _search_watch_service

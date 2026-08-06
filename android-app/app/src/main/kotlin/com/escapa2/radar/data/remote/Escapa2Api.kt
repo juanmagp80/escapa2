@@ -7,6 +7,8 @@ import com.escapa2.radar.data.remote.dto.AirportPreferenceDto
 import com.escapa2.radar.data.remote.dto.OpportunityDto
 import com.escapa2.radar.data.remote.dto.ProfileDto
 import com.escapa2.radar.data.remote.dto.ProfileUpdateDto
+import com.escapa2.radar.data.remote.dto.SearchWatchCreateDto
+import com.escapa2.radar.data.remote.dto.SearchWatchDto
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -50,4 +52,10 @@ interface Escapa2Api {
 
     @PUT("profile/airports")
     suspend fun replaceAirports(@Body body: List<AirportPreferenceDto>): List<AirportPreferenceDto>
+
+    @GET("watches")
+    suspend fun getWatches(): List<SearchWatchDto>
+
+    @POST("watches")
+    suspend fun createWatch(@Body body: SearchWatchCreateDto): SearchWatchDto
 }
