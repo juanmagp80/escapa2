@@ -477,6 +477,42 @@ aplican los campos presentes.
 
 Elimina un seguimiento. `204` en caso de éxito.
 
+### `POST /watches/daily-report`
+
+Genera el informe diario conectado a los datos reales de los seguimientos. El
+backend construye la entrada desde los watches `ACTIVE` con oportunidades
+coincidentes: para cada uno toma la oportunidad más barata que encaje en sus
+criterios, su historial de `PriceSnapshot`, el presupuesto
+(`budget_eur`/`max_total_cost_eur`), el precio anterior, el mínimo registrado y
+datos del transporte. Después resume el conjunto con reglas deterministas
+(`generated_by_ai=false`) o con Gemini cuando `GEMINI_ENABLED=true`.
+
+Respuesta (`200`):
+
+```json
+{
+  "report_date": "2026-08-06",
+  "headline": "Santiago de Compostela marca un nuevo mínimo registrado",
+  "generated_by_ai": false,
+  "entries": [
+    {
+      "watch_name": "Roma en avión",
+      "destination": "Porto (horario ajustado)",
+      "current_total_eur": 214.0,
+      "previous_total_eur": 246.0,
+      "min_recorded_eur": 214.0,
+      "change_eur": -32.0,
+      "change_percent": -13.0
+    }
+  ]
+}
+```
+
+Errores:
+
+- `404 NOT_FOUND` cuando no hay ningún watch `ACTIVE` con oportunidades
+  coincidentes.
+
 ### `POST /watches/{id}/run`
 
 Ejecuta un seguimiento: refresca `last_run_at` y `next_run_at`, guarda un

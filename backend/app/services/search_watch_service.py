@@ -9,10 +9,11 @@ opportunities.
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 from pydantic import BaseModel, Field
 
+from app.ai.schemas import DailyReportPricePoint, DailyReportRequest, DailyReportWatchInput
 from app.core.errors import NotFoundError
 from app.domain.alerts import (
     AlertConfig,
@@ -168,6 +169,76 @@ class SearchWatchService:
             next_run_at=refreshed.next_run_at,
             matched_opportunities=opportunities,
             alerts=alerts,
+        )
+
+    def build_daily_report_request(
+        self, report_date: date | None = None
+    ) -> DailyReportRequest | None:
+        """Build the AI daily report input from the active watches.
+
+        For each active watch it picks the cheapest matching opportunity and
+        enriches it with the recorded price history and criteria budget. Returns
+        ``None`` when there are no active watches with matching opportunities.
+        """
+        inputs: list[DailyReportWatchInput] = []
+        for watch in self._watches.list_watches():
+            if watch.status != WatchStatus.ACTIVE:
+                continue
+            opportunity = self._cheapest_matching(watch.criteria_json)
+            if opportunity is None or opportunity.total_cost_eur is None:
+                continue
+            inputs.append(self._daily_report_input(watch, opportunity))
+        if not inputs:
+            return None
+        return DailyReportRequest(
+            report_date=report_date or datetime.now(UTC).date(),
+            watches=inputs,
+        )
+
+    def _cheapest_matching(self, criteria: dict[str, object]) -> Opportunity | None:
+        matching = self._match_opportunities(criteria)
+        priced = [item for item in matching if item.total_cost_eur is not None]
+        if not priced:
+            return None
+        return min(priced, key=lambda item: item.total_cost_eur or 0.0)
+
+    def _daily_report_input(
+        self,
+        watch: SearchWatch,
+        opportunity: Opportunity,
+    ) -> DailyReportWatchInput:
+        history = self._opportunities.price_history(opportunity.id)
+        totals = [
+            snapshot.total_cost_eur for snapshot in history if snapshot.total_cost_eur is not None
+        ]
+        criteria = watch.criteria_json
+
+        budget = criteria.get("budget_eur")
+        if not isinstance(budget, (int, float)):
+            budget = criteria.get("max_total_cost_eur")
+        if not isinstance(budget, (int, float)):
+            budget = None
+
+        return DailyReportWatchInput(
+            watch_name=watch.name,
+            destination=opportunity.destination_name,
+            current_total_eur=opportunity.total_cost_eur or 0.0,
+            previous_total_eur=_latest_total(history),
+            min_recorded_eur=min(totals) if totals else None,
+            budget_eur=float(budget) if budget is not None else None,
+            price_history=[
+                DailyReportPricePoint(
+                    captured_at=snapshot.captured_at, total_eur=snapshot.total_cost_eur
+                )
+                for snapshot in history
+                if snapshot.total_cost_eur is not None
+            ],
+            facts=[
+                f"Transport: {opportunity.transport_mode.value}",
+                f"Verified: {opportunity.provider_verified_at.isoformat()}"
+                if opportunity.provider_verified_at
+                else "Verified: unknown",
+            ],
         )
 
     def _match_opportunities(self, criteria: dict[str, object]) -> list[Opportunity]:

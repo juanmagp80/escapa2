@@ -7,8 +7,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Response, status
 
-from app.api.deps import get_search_watch_service
+from app.ai.schemas import DailyReportResponse
+from app.api.deps import get_ai_service, get_search_watch_service
+from app.core.errors import NotFoundError
 from app.domain.search_watch import SearchWatch
+from app.services.ai_service import AiService
 from app.services.search_watch_service import (
     SearchWatchCreate,
     SearchWatchService,
@@ -19,6 +22,12 @@ from app.services.search_watch_service import (
 router = APIRouter(prefix="/watches", tags=["watches"])
 
 SearchWatchServiceDep = Annotated[SearchWatchService, Depends(get_search_watch_service)]
+AiServiceDep = Annotated[AiService, Depends(get_ai_service)]
+
+
+def _user_key() -> str:
+    """User identifier for quota and cache. Dev user until auth lands."""
+    return "dev-user"
 
 
 @router.get("", response_model=list[SearchWatch])
@@ -73,3 +82,20 @@ def run_watch(
 ) -> WatchRunResult:
     """Run a watch: record price snapshots and evaluate configured alerts."""
     return service.run(watch_id)
+
+
+@router.post("/daily-report", response_model=DailyReportResponse)
+async def generate_daily_report(
+    service: SearchWatchServiceDep,
+    ai: AiServiceDep,
+) -> DailyReportResponse:
+    """Generate the daily report from the watched trips' real price history.
+
+    Builds the input from the active watches and their recorded snapshots, then
+    summarizes it with rules or Gemini. Fails with 404 when there are no active
+    watches with matching opportunities.
+    """
+    request = service.build_daily_report_request()
+    if request is None:
+        raise NotFoundError("search watch", "no active watches with matching opportunities")
+    return await ai.generate_daily_report(request, _user_key())

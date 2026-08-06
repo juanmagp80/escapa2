@@ -8,7 +8,11 @@ from datetime import UTC, datetime, timedelta
 from app.domain.opportunity import Opportunity, PriceSnapshot
 from app.providers.mock_opportunity_provider import MockOpportunityProvider
 from app.providers.mock_search_watch_provider import MockSearchWatchProvider
-from app.services.search_watch_service import SearchWatchCreate, SearchWatchService
+from app.services.search_watch_service import (
+    SearchWatchCreate,
+    SearchWatchService,
+    SearchWatchUpdate,
+)
 from fastapi.testclient import TestClient
 
 WATCH_ID = "20000000-0000-4000-8000-000000000001"
@@ -247,3 +251,60 @@ def test_service_run_no_alert_without_change() -> None:
     result = service.run(watch.id)
 
     assert result.alerts == []
+
+
+def test_build_daily_report_request_uses_real_history() -> None:
+    opportunities = MockOpportunityProvider()
+    service = SearchWatchService(MockSearchWatchProvider(), opportunities)
+    watch = service.create(
+        SearchWatchCreate.model_validate(
+            {
+                "name": "Roma en avión",
+                "criteria": {"max_total_cost_eur": 400, "transport_mode": "FLIGHT"},
+            }
+        )
+    )
+    service.run(watch.id)
+
+    request = service.build_daily_report_request()
+
+    assert request is not None
+    assert request.report_date is not None
+    entry = next(item for item in request.watches if item.watch_name == watch.name)
+    assert entry.destination in {"Sevilla", "Porto", "Porto (horario ajustado)"}
+    assert entry.current_total_eur > 0
+    assert entry.price_history, "expected recorded snapshots"
+    assert any(point.total_eur > 0 for point in entry.price_history)
+    assert any("Transport" in fact for fact in entry.facts)
+
+
+def test_build_daily_report_request_skips_inactive_and_empty() -> None:
+    provider = MockSearchWatchProvider()
+    service = SearchWatchService(provider, MockOpportunityProvider())
+    for watch in service.list_watches():
+        service.update(watch.id, SearchWatchUpdate(status="PAUSED"))
+
+    assert service.build_daily_report_request() is None
+
+
+def test_daily_report_endpoint_returns_summary(client: TestClient) -> None:
+    created = client.post("/api/v1/watches", json=_payload()).json()
+    client.post(f"/api/v1/watches/{created['id']}/run")
+
+    response = client.post("/api/v1/watches/daily-report")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["generated_by_ai"] is False
+    assert isinstance(body["entries"], list)
+    assert body["entries"]
+
+
+def test_daily_report_endpoint_404_without_active_watches(client: TestClient) -> None:
+    for watch in client.get("/api/v1/watches").json():
+        client.put(f"/api/v1/watches/{watch['id']}", json={"status": "PAUSED"})
+
+    response = client.post("/api/v1/watches/daily-report")
+
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "NOT_FOUND"

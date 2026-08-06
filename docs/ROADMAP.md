@@ -50,6 +50,7 @@
 - ✅ `POST /watches/{id}/run` guarda snapshots de precio y evalúa las reglas de alerta configuradas.
 - ✅ Historial de precios real en el detalle Android (`GET /opportunities/{id}/price-history`), conectado a los snapshots de cada ejecución del radar.
 - ✅ Scheduler diario en backend (`SCHEDULER_ENABLED`): ejecuta en un hilo los seguimientos activos cuyo `next_run_at` ha pasado; desactivado por defecto.
+- ✅ `POST /watches/daily-report`: informe diario generado desde los datos reales de los seguimientos (snapshots, mínimo registrado, cambio), con reglas o Gemini.
 - Snapshots.
 - Reglas de alerta.
 - Informe diario.
