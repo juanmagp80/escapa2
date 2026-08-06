@@ -23,6 +23,10 @@
     <string name="home_verified">Verificado</string>
     <string name="home_availability_flexible">Fechas flexibles</string>
     <string name="home_availability_fixed">Fechas fijas</string>
+    <string name="home_daily_report">Informe de hoy</string>
+    <string name="home_report_change_down">−%1$s EUR</string>
+    <string name="home_report_change_up">+%1$s EUR</string>
+    <string name="home_report_change_flat">Sin cambios</string>
     <string name="explore_title">Explorar escapadas</string>
     <string name="radar_title">Radar de viajes vigilados</string>
     <string name="radar_active_watches">Seguimientos activos</string>

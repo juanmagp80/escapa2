@@ -1,12 +1,16 @@
 package com.escapa2.radar.ui.home
 
+import com.escapa2.radar.data.model.AiSummary
 import com.escapa2.radar.data.model.AvailabilityWindow
+import com.escapa2.radar.data.model.DailyReport
+import com.escapa2.radar.data.model.DailyReportEntry
 import com.escapa2.radar.data.model.Opportunity
 import com.escapa2.radar.data.model.OpportunitySearchFilters
 import com.escapa2.radar.data.model.PriceSnapshot
 import com.escapa2.radar.data.model.SearchWatch
 import com.escapa2.radar.data.model.TransportMode
 import com.escapa2.radar.data.model.WatchRunResult
+import com.escapa2.radar.data.repository.AiRepository
 import com.escapa2.radar.data.repository.AvailabilityRepository
 import com.escapa2.radar.data.repository.OpportunityRepository
 import com.escapa2.radar.data.repository.SearchWatchRepository
@@ -46,6 +50,7 @@ class HomeViewModelTest {
             StaticRepository(listOf(sampleOpportunity())),
             StaticWatchRepository(emptyList()),
             StaticAvailabilityRepository(listOf(sampleWindow())),
+            StaticAiRepository(),
         )
         advanceUntilIdle()
 
@@ -57,6 +62,7 @@ class HomeViewModelTest {
         assertEquals("Santiago de Compostela", dashboard.bestOpportunity?.destinationName)
         assertEquals("2026-08-05T12:00:00Z", dashboard.lastUpdateAt)
         assertEquals(1, dashboard.availabilityWindows.size)
+        assertEquals("Buen día para escapar", dashboard.dailyReport?.headline)
     }
 
     @Test
@@ -65,6 +71,7 @@ class HomeViewModelTest {
             StaticRepository(emptyList()),
             StaticWatchRepository(emptyList()),
             StaticAvailabilityRepository(emptyList()),
+            StaticAiRepository(),
         )
         advanceUntilIdle()
 
@@ -77,12 +84,28 @@ class HomeViewModelTest {
             FailingRepository(),
             StaticWatchRepository(emptyList()),
             StaticAvailabilityRepository(emptyList()),
+            StaticAiRepository(),
         )
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
         assertTrue(state is UiState.Error)
         assertTrue((state as UiState.Error).message.isNotBlank())
+    }
+
+    @Test
+    fun loadKeepsContentWhenDailyReportFails() = runTest(dispatcher.scheduler) {
+        val viewModel = HomeViewModel(
+            StaticRepository(listOf(sampleOpportunity())),
+            StaticWatchRepository(emptyList()),
+            StaticAvailabilityRepository(emptyList()),
+            FailingAiRepository(),
+        )
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state is UiState.Content)
+        assertNull((state as UiState.Content).data.dailyReport)
     }
 
     @Test
@@ -103,6 +126,7 @@ class HomeViewModelTest {
             StaticRepository(listOf(lowScore, highScore)),
             StaticWatchRepository(emptyList()),
             StaticAvailabilityRepository(emptyList()),
+            StaticAiRepository(),
         )
         advanceUntilIdle()
 
@@ -128,6 +152,7 @@ class HomeViewModelTest {
             StaticRepository(listOf(smallDrop, bigDrop)),
             StaticWatchRepository(emptyList()),
             StaticAvailabilityRepository(emptyList()),
+            StaticAiRepository(),
         )
         advanceUntilIdle()
 
@@ -142,6 +167,7 @@ class HomeViewModelTest {
             StaticRepository(listOf(noPrevious)),
             StaticWatchRepository(emptyList()),
             StaticAvailabilityRepository(emptyList()),
+            StaticAiRepository(),
         )
         advanceUntilIdle()
 
@@ -166,6 +192,7 @@ class HomeViewModelTest {
             StaticRepository(listOf(sampleOpportunity())),
             StaticWatchRepository(listOf(watch)),
             StaticAvailabilityRepository(emptyList()),
+            StaticAiRepository(),
         )
         advanceUntilIdle()
 
@@ -224,6 +251,45 @@ class HomeViewModelTest {
             throw IllegalStateException("backend unavailable")
         override suspend fun getPriceHistory(id: String): List<PriceSnapshot> =
             throw IllegalStateException("backend unavailable")
+    }
+
+    private class StaticAiRepository : AiRepository {
+        override suspend fun summarizeOpportunity(opportunity: Opportunity): AiSummary =
+            AiSummary(
+                headline = "Local",
+                summary = "Local",
+                pros = emptyList(),
+                cons = emptyList(),
+                confidence = "LOW",
+                generatedByAi = false,
+            )
+
+        override suspend fun generateDailyReport(): DailyReport = DailyReport(
+            headline = "Buen día para escapar",
+            summary = "Los precios verificados hoy bajan.",
+            entries = listOf(
+                DailyReportEntry(
+                    watchName = "Porto en avión",
+                    destination = "Porto",
+                    changeEur = 16.0,
+                    changePercent = 4.9,
+                    isNewLow = false,
+                    withinBudget = null,
+                    recommendation = "Ha bajado 16.00 EUR",
+                    confidence = "HIGH",
+                )
+            ),
+            warnings = emptyList(),
+            generatedByAi = false,
+        )
+    }
+
+    private class FailingAiRepository : AiRepository {
+        override suspend fun summarizeOpportunity(opportunity: Opportunity): AiSummary =
+            throw IllegalStateException("ai unavailable")
+
+        override suspend fun generateDailyReport(): DailyReport =
+            throw IllegalStateException("ai unavailable")
     }
 
     private class StaticWatchRepository(

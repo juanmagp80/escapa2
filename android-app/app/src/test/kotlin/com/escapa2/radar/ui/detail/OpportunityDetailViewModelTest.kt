@@ -1,6 +1,7 @@
 package com.escapa2.radar.ui.detail
 
 import com.escapa2.radar.data.model.AiSummary
+import com.escapa2.radar.data.model.DailyReport
 import com.escapa2.radar.data.model.Opportunity
 import com.escapa2.radar.data.model.OpportunitySearchFilters
 import com.escapa2.radar.data.model.PriceSnapshot
@@ -44,7 +45,7 @@ class OpportunityDetailViewModelTest {
     fun loadExposesContentForKnownOpportunity() = runTest(dispatcher.scheduler) {
         val viewModel = OpportunityDetailViewModel(
             SingleRepository(sampleOpportunity()),
-            FakeAiRepository(),
+            FakeAiRepository(StaticWatchRepository()),
             StaticWatchRepository(),
         )
         viewModel.load("opp-1")
@@ -59,7 +60,7 @@ class OpportunityDetailViewModelTest {
     fun loadExposesEmptyForUnknownOpportunity() = runTest(dispatcher.scheduler) {
         val viewModel = OpportunityDetailViewModel(
             SingleRepository(sampleOpportunity()),
-            FakeAiRepository(),
+            FakeAiRepository(StaticWatchRepository()),
             StaticWatchRepository(),
         )
         viewModel.load("opp-missing")
@@ -72,7 +73,7 @@ class OpportunityDetailViewModelTest {
     fun loadExposesErrorWhenRepositoryFails() = runTest(dispatcher.scheduler) {
         val viewModel = OpportunityDetailViewModel(
             FailingRepository(),
-            FakeAiRepository(),
+            FakeAiRepository(StaticWatchRepository()),
             StaticWatchRepository(),
         )
         viewModel.load("opp-1")
@@ -87,7 +88,7 @@ class OpportunityDetailViewModelTest {
     fun loadLoadsAiSummaryForKnownOpportunity() = runTest(dispatcher.scheduler) {
         val viewModel = OpportunityDetailViewModel(
             SingleRepository(sampleOpportunity()),
-            FakeAiRepository(),
+            FakeAiRepository(StaticWatchRepository()),
             StaticWatchRepository(),
         )
         viewModel.load("opp-1")
@@ -118,7 +119,7 @@ class OpportunityDetailViewModelTest {
     fun loadExposesPriceHistoryWhenRepositoryProvidesSnapshots() = runTest(dispatcher.scheduler) {
         val viewModel = OpportunityDetailViewModel(
             HistoryRepository(),
-            FakeAiRepository(),
+            FakeAiRepository(StaticWatchRepository()),
             StaticWatchRepository(),
         )
         viewModel.load("opp-1")
@@ -137,7 +138,7 @@ class OpportunityDetailViewModelTest {
         val watchRepository = StaticWatchRepository()
         val viewModel = OpportunityDetailViewModel(
             SingleRepository(sampleOpportunity()),
-            FakeAiRepository(),
+            FakeAiRepository(StaticWatchRepository()),
             watchRepository,
         )
         viewModel.load("opp-1")
@@ -155,7 +156,7 @@ class OpportunityDetailViewModelTest {
     fun followExposesErrorWhenRepositoryFails() = runTest(dispatcher.scheduler) {
         val viewModel = OpportunityDetailViewModel(
             SingleRepository(sampleOpportunity()),
-            FakeAiRepository(),
+            FakeAiRepository(StaticWatchRepository()),
             FailingWatchRepository(),
         )
         viewModel.load("opp-1")
@@ -228,6 +229,8 @@ class OpportunityDetailViewModelTest {
 
     private class FailingAiRepository : AiRepository {
         override suspend fun summarizeOpportunity(opportunity: Opportunity): AiSummary =
+            throw IllegalStateException("ai unavailable")
+        override suspend fun generateDailyReport(): DailyReport =
             throw IllegalStateException("ai unavailable")
     }
 

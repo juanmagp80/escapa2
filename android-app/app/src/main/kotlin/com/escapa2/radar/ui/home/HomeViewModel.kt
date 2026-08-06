@@ -3,8 +3,10 @@ package com.escapa2.radar.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.escapa2.radar.data.model.AvailabilityWindow
+import com.escapa2.radar.data.model.DailyReport
 import com.escapa2.radar.data.model.Opportunity
 import com.escapa2.radar.data.model.SearchWatch
+import com.escapa2.radar.data.repository.AiRepository
 import com.escapa2.radar.data.repository.AvailabilityRepository
 import com.escapa2.radar.data.repository.OpportunityRepository
 import com.escapa2.radar.data.repository.SearchWatchRepository
@@ -18,13 +20,14 @@ import kotlinx.coroutines.launch
 
 /**
  * Home dashboard: the current best option, the biggest price drop, the
- * closest free dates and the watched trips.
+ * closest free dates, the watched trips and the daily report.
  */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val repository: OpportunityRepository,
     private val watchRepository: SearchWatchRepository,
     private val availabilityRepository: AvailabilityRepository,
+    private val aiRepository: AiRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState<HomeDashboard>>(UiState.Loading)
@@ -41,10 +44,13 @@ class HomeViewModel @Inject constructor(
                 val opportunities = repository.getOpportunities()
                 val watches = watchRepository.getWatches()
                 val windows = availabilityRepository.getWindows()
+                val dailyReport = loadDailyReport()
                 _uiState.value = if (opportunities.isEmpty() && watches.isEmpty() && windows.isEmpty()) {
                     UiState.Empty
                 } else {
-                    UiState.Content(buildDashboard(opportunities, watches, windows))
+                    UiState.Content(
+                        buildDashboard(opportunities, watches, windows, dailyReport)
+                    )
                 }
             } catch (e: Exception) {
                 _uiState.value = UiState.Error(e.message ?: "Unexpected error")
@@ -52,10 +58,21 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    /**
+     * The daily report is auxiliary: a failure must not block the dashboard,
+     * so it is resolved to null and retried on the next load.
+     */
+    private suspend fun loadDailyReport(): DailyReport? = try {
+        aiRepository.generateDailyReport()
+    } catch (_: Exception) {
+        null
+    }
+
     private fun buildDashboard(
         opportunities: List<Opportunity>,
         watches: List<SearchWatch>,
         windows: List<AvailabilityWindow>,
+        dailyReport: DailyReport?,
     ): HomeDashboard = HomeDashboard(
         opportunities = opportunities,
         bestOpportunity = bestOpportunity(opportunities),
@@ -63,6 +80,7 @@ class HomeViewModel @Inject constructor(
         watches = watches,
         availabilityWindows = windows.sortedBy { it.startAt }.take(NEXT_FREE_DATES_LIMIT),
         lastUpdateAt = opportunities.maxOfOrNull { it.verifiedAt },
+        dailyReport = dailyReport,
     )
 
     private fun bestOpportunity(opportunities: List<Opportunity>): Opportunity? =
@@ -98,6 +116,7 @@ data class HomeDashboard(
     val watches: List<SearchWatch>,
     val availabilityWindows: List<AvailabilityWindow>,
     val lastUpdateAt: String?,
+    val dailyReport: DailyReport?,
 )
 
 data class PriceDrop(

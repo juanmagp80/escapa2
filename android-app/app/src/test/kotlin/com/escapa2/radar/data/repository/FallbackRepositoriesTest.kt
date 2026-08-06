@@ -1,6 +1,8 @@
 package com.escapa2.radar.data.repository
 
 import com.escapa2.radar.data.model.AiSummary
+import com.escapa2.radar.data.model.DailyReport
+import com.escapa2.radar.data.model.DailyReportEntry
 import com.escapa2.radar.data.model.Opportunity
 import com.escapa2.radar.data.model.OpportunitySearchFilters
 import com.escapa2.radar.data.model.PriceSnapshot
@@ -62,6 +64,26 @@ class FallbackRepositoriesTest {
     }
 
     @Test
+    fun aiRepositoryDailyReportFallsBackOnIOException() {
+        val remote = FailingAiRepository(IOException("no network"))
+        val fallback = FallbackAiRepository(remote, LocalAiRepository())
+
+        runBlocking {
+            assertEquals("Local", fallback.generateDailyReport().headline)
+        }
+    }
+
+    @Test
+    fun aiRepositoryDailyReportReturnsRemoteResultWhenAvailable() {
+        val remote = RemoteAiRepositoryStub()
+        val fallback = FallbackAiRepository(remote, LocalAiRepository())
+
+        runBlocking {
+            assertEquals("Remote", fallback.generateDailyReport().headline)
+        }
+    }
+
+    @Test
     fun profileRepositoryFallsBackOnIOException() {
         val remote = FailingProfileRepository(IOException("no network"))
         val fallback = FallbackProfileRepository(remote, LocalProfileRepository())
@@ -113,15 +135,19 @@ class FallbackRepositoriesTest {
         private val error: Throwable,
     ) : AiRepository {
         override suspend fun summarizeOpportunity(opportunity: Opportunity): AiSummary = throw error
+        override suspend fun generateDailyReport(): DailyReport = throw error
     }
 
     private inner class RemoteAiRepositoryStub : AiRepository {
         override suspend fun summarizeOpportunity(opportunity: Opportunity): AiSummary =
             localSummary.copy(headline = "Remote", generatedByAi = true)
+        override suspend fun generateDailyReport(): DailyReport =
+            localReport.copy(headline = "Remote", generatedByAi = true)
     }
 
     private inner class LocalAiRepository : AiRepository {
         override suspend fun summarizeOpportunity(opportunity: Opportunity): AiSummary = localSummary
+        override suspend fun generateDailyReport(): DailyReport = localReport
     }
 
     private inner class FailingProfileRepository(
@@ -193,6 +219,25 @@ class FallbackRepositoriesTest {
             pros = emptyList(),
             cons = emptyList(),
             confidence = "LOW",
+            generatedByAi = false,
+        )
+
+        private val localReport = DailyReport(
+            headline = "Local",
+            summary = "Local report",
+            entries = listOf(
+                DailyReportEntry(
+                    watchName = "Porto",
+                    destination = "Porto",
+                    changeEur = 16.0,
+                    changePercent = 4.9,
+                    isNewLow = false,
+                    withinBudget = null,
+                    recommendation = "Ha bajado 16.00 EUR",
+                    confidence = "HIGH",
+                )
+            ),
+            warnings = emptyList(),
             generatedByAi = false,
         )
 

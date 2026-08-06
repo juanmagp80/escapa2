@@ -1,6 +1,8 @@
 package com.escapa2.radar.data.repository
 
 import com.escapa2.radar.data.model.AiSummary
+import com.escapa2.radar.data.model.DailyReport
+import com.escapa2.radar.data.model.DailyReportEntry
 import com.escapa2.radar.data.model.Opportunity
 import com.escapa2.radar.data.remote.Escapa2Api
 import com.escapa2.radar.data.remote.dto.AiSummaryRequestDto
@@ -34,6 +36,28 @@ class RemoteAiRepository(
             pros = response.pros,
             cons = response.cons,
             confidence = response.confidence,
+            generatedByAi = response.generatedByAi,
+        )
+    }
+
+    override suspend fun generateDailyReport(): DailyReport {
+        val response = api.getDailyReport()
+        return DailyReport(
+            headline = response.headline,
+            summary = response.summary,
+            entries = response.entries.map { entry ->
+                DailyReportEntry(
+                    watchName = entry.watchName,
+                    destination = entry.destination,
+                    changeEur = entry.changeEur,
+                    changePercent = entry.changePercent,
+                    isNewLow = entry.isNewLow,
+                    withinBudget = entry.withinBudget,
+                    recommendation = entry.recommendation,
+                    confidence = entry.confidence,
+                )
+            },
+            warnings = response.warnings,
             generatedByAi = response.generatedByAi,
         )
     }

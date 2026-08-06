@@ -28,6 +28,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.escapa2.radar.R
 import com.escapa2.radar.data.model.AvailabilityWindow
+import com.escapa2.radar.data.model.DailyReport
+import com.escapa2.radar.data.model.DailyReportEntry
 import com.escapa2.radar.data.model.Opportunity
 import com.escapa2.radar.data.model.SearchWatch
 import com.escapa2.radar.ui.components.OpportunityCard
@@ -127,6 +129,14 @@ private fun ContentState(
     ) {
         item {
             LastUpdateBanner(lastUpdateAt = dashboard.lastUpdateAt)
+        }
+        dashboard.dailyReport?.let { report ->
+            item {
+                SectionTitle(stringResource(R.string.home_daily_report))
+            }
+            item {
+                DailyReportCard(report = report)
+            }
         }
         dashboard.bestOpportunity?.let { best ->
             item {
@@ -274,6 +284,80 @@ private fun PriceDropCard(
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
+    }
+}
+
+@Composable
+private fun DailyReportCard(report: DailyReport, modifier: Modifier = Modifier) {
+    Card(modifier = modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = report.headline,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                text = report.summary,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+            report.entries.forEach { entry ->
+                DailyReportRow(entry = entry)
+            }
+            report.warnings.forEach { warning ->
+                Text(
+                    text = warning,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DailyReportRow(entry: DailyReportEntry) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = entry.watchName,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = entry.recommendation,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.outline,
+            )
+        }
+        Text(
+            text = entryChangeText(entry),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = if ((entry.changeEur ?: 0.0) > 0.0) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            },
+        )
+    }
+}
+
+@Composable
+private fun entryChangeText(entry: DailyReportEntry): String {
+    val change = entry.changeEur
+    return when {
+        change == null -> stringResource(R.string.home_report_change_flat)
+        change > 0.0 -> stringResource(R.string.home_report_change_down, formatAmount(change))
+        change < 0.0 -> stringResource(R.string.home_report_change_up, formatAmount(-change))
+        else -> stringResource(R.string.home_report_change_flat)
     }
 }
 

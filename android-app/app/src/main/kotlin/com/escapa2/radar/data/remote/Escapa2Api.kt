@@ -5,6 +5,7 @@ import com.escapa2.radar.data.remote.dto.AiSummaryDto
 import com.escapa2.radar.data.remote.dto.AiSummaryRequestDto
 import com.escapa2.radar.data.remote.dto.AirportPreferenceDto
 import com.escapa2.radar.data.remote.dto.AvailabilityWindowDto
+import com.escapa2.radar.data.remote.dto.DailyReportResponseDto
 import com.escapa2.radar.data.remote.dto.OpportunityDto
 import com.escapa2.radar.data.remote.dto.PriceSnapshotDto
 import com.escapa2.radar.data.remote.dto.ProfileDto
@@ -72,6 +73,9 @@ interface Escapa2Api {
 
     @POST("watches/{id}/run")
     suspend fun runWatch(@Path("id") id: String): WatchRunResultDto
+
+    @POST("watches/daily-report")
+    suspend fun getDailyReport(): DailyReportResponseDto
 
     @GET("availability")
     suspend fun getAvailabilityWindows(): List<AvailabilityWindowDto>
