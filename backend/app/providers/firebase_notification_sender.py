@@ -7,6 +7,7 @@ clear error is raised instead of failing silently.
 
 from __future__ import annotations
 
+import json
 import logging
 from typing import Any
 
@@ -18,9 +19,15 @@ logger = logging.getLogger(__name__)
 class FirebaseNotificationSender:
     """Sends push notifications through Firebase Cloud Messaging."""
 
-    def __init__(self, project_id: str, credentials_file: str) -> None:
+    def __init__(
+        self,
+        project_id: str,
+        credentials_file: str = "",
+        credentials_json: str = "",
+    ) -> None:
         self._project_id = project_id
         self._credentials_file = credentials_file
+        self._credentials_json = credentials_json
         self._app: Any | None = None
 
     def send(
@@ -62,8 +69,13 @@ class FirebaseNotificationSender:
         except ImportError as exc:  # pragma: no cover - depends on optional dependency
             raise RuntimeError("FIREBASE_ENABLED=true requires the firebase-admin package") from exc
         app = firebase_admin.initialize_app(
-            firebase_admin.credentials.Certificate(self._credentials_file),
+            self._build_credentials(firebase_admin),
             options={"projectId": self._project_id},
         )
         self._app = app
         return messaging, app
+
+    def _build_credentials(self, firebase_admin: Any) -> Any:
+        if self._credentials_json:
+            return firebase_admin.credentials.Certificate(json.loads(self._credentials_json))
+        return firebase_admin.credentials.Certificate(self._credentials_file)

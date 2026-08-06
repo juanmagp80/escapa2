@@ -191,6 +191,7 @@ def _build_sender(settings: Settings) -> NotificationSender:
         return FirebaseNotificationSender(
             settings.firebase_project_id,
             settings.firebase_credentials_file,
+            settings.firebase_credentials_json,
         )
     return MockNotificationSender()
 

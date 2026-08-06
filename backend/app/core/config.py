@@ -62,6 +62,7 @@ class Settings(BaseSettings):
     firebase_enabled: bool = Field(default=False, validation_alias="FIREBASE_ENABLED")
     firebase_project_id: str = Field(default="", validation_alias="FIREBASE_PROJECT_ID")
     firebase_credentials_file: str = Field(default="", validation_alias="FIREBASE_CREDENTIALS_FILE")
+    firebase_credentials_json: str = Field(default="", validation_alias="FIREBASE_CREDENTIALS_JSON")
 
     @property
     def is_development(self) -> bool:
@@ -77,9 +78,12 @@ class Settings(BaseSettings):
             raise RuntimeError(
                 "AMADEUS_ENABLED=true requires AMADEUS_CLIENT_ID and AMADEUS_CLIENT_SECRET"
             )
-        if self.firebase_enabled and not self.firebase_credentials_file:
+        if self.firebase_enabled and not (
+            self.firebase_credentials_file or self.firebase_credentials_json
+        ):
             raise RuntimeError(
-                "FIREBASE_ENABLED=true requires FIREBASE_CREDENTIALS_FILE (service account JSON)"
+                "FIREBASE_ENABLED=true requires FIREBASE_CREDENTIALS_FILE "
+                "or FIREBASE_CREDENTIALS_JSON (service account JSON)"
             )
 
 

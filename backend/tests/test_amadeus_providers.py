@@ -268,3 +268,32 @@ def test_validate_credentials_fails_fast_without_amadeus_credentials() -> None:
 def test_validate_credentials_passes_when_disabled_without_credentials() -> None:
     settings = _amadeus_settings(AMADEUS_ENABLED="false", AMADEUS_CLIENT_ID="")
     settings.validate_provider_credentials()
+
+
+def test_validate_firebase_credentials_passes_with_credentials_file() -> None:
+    settings = _amadeus_settings(
+        AMADEUS_ENABLED="false",
+        FIREBASE_ENABLED="true",
+        FIREBASE_CREDENTIALS_FILE="firebase-adminsdk.json",
+    )
+    settings.validate_provider_credentials()
+
+
+def test_validate_firebase_credentials_passes_with_credentials_json() -> None:
+    settings = _amadeus_settings(
+        AMADEUS_ENABLED="false",
+        FIREBASE_ENABLED="true",
+        FIREBASE_CREDENTIALS_JSON='{"type": "service_account"}',
+    )
+    settings.validate_provider_credentials()
+
+
+def test_validate_firebase_credentials_fails_without_credentials() -> None:
+    settings = _amadeus_settings(
+        AMADEUS_ENABLED="false",
+        FIREBASE_ENABLED="true",
+        FIREBASE_CREDENTIALS_FILE="",
+        FIREBASE_CREDENTIALS_JSON="",
+    )
+    with pytest.raises(RuntimeError, match="FIREBASE_CREDENTIALS"):
+        settings.validate_provider_credentials()
