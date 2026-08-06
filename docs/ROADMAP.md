@@ -49,7 +49,7 @@
 - ✅ Endpoint `POST /ai/daily-report` (informe diario por reglas o Gemini, con fallback y caché).
 - ✅ `POST /watches/{id}/run` guarda snapshots de precio y evalúa las reglas de alerta configuradas.
 - ✅ Historial de precios real en el detalle Android (`GET /opportunities/{id}/price-history`), conectado a los snapshots de cada ejecución del radar.
-- Scheduler.
+- ✅ Scheduler diario en backend (`SCHEDULER_ENABLED`): ejecuta en un hilo los seguimientos activos cuyo `next_run_at` ha pasado; desactivado por defecto.
 - Snapshots.
 - Reglas de alerta.
 - Informe diario.

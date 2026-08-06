@@ -137,3 +137,10 @@ Este documento registra las decisiones arquitectónicas relevantes del proyecto.
 - **Decisión:** El `run` ahora guarda un `PriceSnapshot` por oportunidad coincidente (con `source_summary_json` indicando el `watch_id`) y evalúa las reglas de alerta humanas de `alert_rules_json["rules"]` mediante `parse_alert_rules` (umbral absoluto, % de bajada, bajada absoluta, nuevo mínimo, encaje en presupuesto) contra el historial real o el `initial_price_eur` del criterio. El contrato cambia a un `WatchRunResult` con `last_run_at`, `next_run_at`, `matched_opportunities` y `alerts`. Se añade `save_snapshots` al protocolo `OpportunityProvider` (mock y SQL ya lo soportan).
 - **Consecuencias:** El historial de precios crece con cada ejecución, alimentando el informe diario de IA y las futuras notificaciones FCM. El Android actual no consume `run`, por lo que el cambio de contrato no rompe la app.
 
+## ADR-020: Scheduler de radar en un hilo del proceso API
+
+- **Estado:** Aceptada.
+- **Contexto:** AGENTS.md 16 pide un radar diario en servidor. En desarrollo el scheduler debe estar desactivado por defecto y permitirse la ejecución manual; en producción se prevé un worker separado con bloqueo distribuido.
+- **Decisión:** Implementar un `RadarScheduler` en `app/services/radar_scheduler.py` que arranca y se detiene con el lifespan de FastAPI cuando `SCHEDULER_ENABLED=true`. Cada `SCHEDULER_INTERVAL_SECONDS` (60 por defecto) selecciona los seguimientos `ACTIVE` cuyo `next_run_at` ha pasado (función pura `due_watches`) y los ejecuta con `SearchWatchService.run`, que ya registra snapshots y evalúa alertas. Un fallo en un watch no detiene el resto del lote.
+- **Consecuencias:** No se añade una dependencia nueva (sin APScheduler): un hilo `threading.Thread` daemon es suficiente para el MVP. La ejecución queda limitada a un único proceso: para producción habrá que migrar a un worker separado con bloqueo (Redis o base de datos) antes de habilitar varios réplicas.
+

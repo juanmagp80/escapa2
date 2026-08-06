@@ -2,14 +2,32 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.deps import get_radar_scheduler
 from app.api.v1.health import router as health_router
 from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    settings = get_settings()
+    scheduler = None
+    if settings.scheduler_enabled:
+        scheduler = get_radar_scheduler()
+        scheduler.start()
+    try:
+        yield
+    finally:
+        if scheduler is not None:
+            scheduler.stop()
 
 
 def create_app() -> FastAPI:
@@ -20,6 +38,7 @@ def create_app() -> FastAPI:
         title=settings.app_name,
         version=settings.app_version,
         debug=settings.app_debug,
+        lifespan=lifespan,
     )
     app.add_middleware(
         CORSMiddleware,

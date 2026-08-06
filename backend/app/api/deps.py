@@ -23,6 +23,7 @@ from app.services.ai_service import AiService
 from app.services.availability_service import AvailabilityService
 from app.services.opportunity_service import OpportunityService
 from app.services.profile_service import ProfileService
+from app.services.radar_scheduler import RadarScheduler
 from app.services.search_watch_service import SearchWatchService
 
 _ai_provider: AiProvider | None = None
@@ -145,3 +146,16 @@ def get_search_watch_service() -> SearchWatchService:
             get_opportunity_provider(),
         )
     return _search_watch_service
+
+
+def get_radar_scheduler() -> RadarScheduler:
+    """Return the radar scheduler, created but not started.
+
+    The scheduler only starts when ``SCHEDULER_ENABLED=true`` (see main.py
+    lifespan). Tests keep it idle because the flag defaults to false.
+    """
+    settings = get_settings()
+    return RadarScheduler(
+        get_search_watch_service(),
+        interval_seconds=settings.scheduler_interval_seconds,
+    )

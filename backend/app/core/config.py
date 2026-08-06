@@ -46,6 +46,11 @@ class Settings(BaseSettings):
         default=20, validation_alias="GEMINI_MAX_REQUESTS_PER_USER_DAY"
     )
 
+    scheduler_enabled: bool = Field(default=False, validation_alias="SCHEDULER_ENABLED")
+    scheduler_interval_seconds: float = Field(
+        default=60.0, validation_alias="SCHEDULER_INTERVAL_SECONDS"
+    )
+
     @property
     def is_development(self) -> bool:
         return self.app_env == "development"
