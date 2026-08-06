@@ -75,3 +75,17 @@
 - Seguimiento de hotel.
 - Gastos reales.
 - Predicción orientativa.
+
+## Fase 8 — Rediseño visual y experiencia de uso
+
+Pendiente, marcada por el usuario (2026-08-06): la app debe tener una estética
+que atraiga usuarios, no solo funcional. Alcance orientativo:
+
+- Revisar la paleta de color actual (excesivamente verde) y definir una
+  identidad de viaje más cuidada con Material 3.
+- Revisar tipografía, espaciado, tarjetas e iconografía.
+- Revisar el Home: los viajes sugeridos no se perciben útiles mientras no haya
+  datos reales de vuelos, hoteles y carburante; estudiar cómo presentar el valor
+  en la fase de datos simulados.
+- Encuestas visuales y refinamientos incrementales sobre las pantallas
+  existentes.

@@ -1,5 +1,6 @@
 package com.escapa2.radar.ui.explore
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -90,118 +92,161 @@ fun ExploreScreen(
     Scaffold(
         topBar = { TopAppBar(title = { Text(stringResource(R.string.explore_title)) }) },
     ) { padding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = stringResource(R.string.explore_filters_title),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = 12.dp),
-            )
-            OutlinedTextField(
-                value = origin,
-                onValueChange = { origin = it },
-                label = { Text(stringResource(R.string.explore_origin_label)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            OutlinedTextField(
-                value = budget,
-                onValueChange = { budget = it },
-                label = { Text(stringResource(R.string.explore_budget_label)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            OutlinedTextField(
-                value = minHours,
-                onValueChange = { minHours = it },
-                label = { Text(stringResource(R.string.explore_min_hours_label)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            OutlinedTextField(
-                value = destination,
-                onValueChange = { destination = it },
-                label = { Text(stringResource(R.string.explore_destination_label)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Text(
-                text = stringResource(R.string.explore_transport_label),
-                style = MaterialTheme.typography.labelLarge,
-            )
-            RowChips(
-                selected = transportMode,
-                onSelect = { transportMode = it },
-            )
-            Text(
-                text = stringResource(R.string.explore_duration_label),
-                style = MaterialTheme.typography.labelLarge,
-            )
-            DurationChips(
-                selected = duration,
-                onSelect = { duration = it },
-            )
-            Text(
-                text = stringResource(R.string.explore_interests_label),
-                style = MaterialTheme.typography.labelLarge,
-            )
-            InterestChips(
-                selected = interest,
-                onSelect = { interest = it },
-            )
-            if (windows.isNotEmpty()) {
+            item {
                 Text(
-                    text = stringResource(R.string.explore_free_dates_label),
+                    text = stringResource(R.string.explore_filters_title),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
+            item {
+                OutlinedTextField(
+                    value = origin,
+                    onValueChange = { origin = it },
+                    label = { Text(stringResource(R.string.explore_origin_label)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            item {
+                OutlinedTextField(
+                    value = budget,
+                    onValueChange = { budget = it },
+                    label = { Text(stringResource(R.string.explore_budget_label)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            item {
+                OutlinedTextField(
+                    value = minHours,
+                    onValueChange = { minHours = it },
+                    label = { Text(stringResource(R.string.explore_min_hours_label)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            item {
+                OutlinedTextField(
+                    value = destination,
+                    onValueChange = { destination = it },
+                    label = { Text(stringResource(R.string.explore_destination_label)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            item {
+                Text(
+                    text = stringResource(R.string.explore_transport_label),
                     style = MaterialTheme.typography.labelLarge,
                 )
-                WindowChips(
-                    windows = windows,
-                    selectedId = windowId,
-                    onSelect = { windowId = it },
+            }
+            item {
+                RowChips(
+                    selected = transportMode,
+                    onSelect = { transportMode = it },
                 )
             }
-            Button(
-                onClick = { runSearch() },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.explore_search_button))
+            item {
+                Text(
+                    text = stringResource(R.string.explore_duration_label),
+                    style = MaterialTheme.typography.labelLarge,
+                )
             }
-            OutlinedButton(
-                onClick = {
-                    viewModel.search(
-                        maxTotalCostEur = null,
-                        transportMode = null,
-                        minUsefulHours = null,
-                        destinationQuery = null,
-                        minNights = null,
-                        maxNights = null,
-                        originCity = null,
-                        interest = null,
-                        window = null,
+            item {
+                DurationChips(
+                    selected = duration,
+                    onSelect = { duration = it },
+                )
+            }
+            item {
+                Text(
+                    text = stringResource(R.string.explore_interests_label),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+            }
+            item {
+                InterestChips(
+                    selected = interest,
+                    onSelect = { interest = it },
+                )
+            }
+            if (windows.isNotEmpty()) {
+                item {
+                    Text(
+                        text = stringResource(R.string.explore_free_dates_label),
+                        style = MaterialTheme.typography.labelLarge,
                     )
-                },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.explore_surprise_button))
+                }
+                item {
+                    WindowChips(
+                        windows = windows,
+                        selectedId = windowId,
+                        onSelect = { windowId = it },
+                    )
+                }
+            }
+            item {
+                Button(
+                    onClick = { runSearch() },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.explore_search_button))
+                }
+            }
+            item {
+                OutlinedButton(
+                    onClick = {
+                        viewModel.search(
+                            maxTotalCostEur = null,
+                            transportMode = null,
+                            minUsefulHours = null,
+                            destinationQuery = null,
+                            minNights = null,
+                            maxNights = null,
+                            originCity = null,
+                            interest = null,
+                            window = null,
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.explore_surprise_button))
+                }
             }
             when (val state = uiState) {
-                is UiState.Loading -> LoadingState(modifier = Modifier.weight(1f))
-                is UiState.Empty -> ResultsHint(modifier = Modifier.weight(1f))
-                is UiState.Error -> ErrorState(
-                    message = state.message,
-                    onRetry = { runSearch() },
-                    modifier = Modifier.weight(1f),
-                )
-                is UiState.Content -> ResultsList(
-                    opportunities = state.data,
-                    onOpportunityClick = onOpportunityClick,
-                    modifier = Modifier.weight(1f),
-                )
+                is UiState.Loading -> item {
+                    LoadingState(modifier = Modifier.fillParentMaxSize())
+                }
+                is UiState.Empty -> item {
+                    ResultsHint(modifier = Modifier.fillParentMaxSize())
+                }
+                is UiState.Error -> item {
+                    ErrorState(
+                        message = state.message,
+                        onRetry = { runSearch() },
+                        modifier = Modifier.fillParentMaxSize(),
+                    )
+                }
+                is UiState.Content -> if (state.data.isEmpty()) {
+                    item {
+                        ResultsEmpty(modifier = Modifier.fillParentMaxSize())
+                    }
+                } else {
+                    items(state.data, key = { it.id }) { opportunity ->
+                        OpportunityCard(
+                            opportunity = opportunity,
+                            onClick = { onOpportunityClick(opportunity.id) },
+                        )
+                    }
+                }
             }
         }
     }
@@ -223,6 +268,7 @@ private fun DurationChips(
 ) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
     ) {
         FilterChip(
             selected = selected == DurationFilter.ANY,
@@ -249,6 +295,7 @@ private fun RowChips(
 ) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
     ) {
         FilterChip(
             selected = selected == null,
@@ -273,7 +320,10 @@ private fun InterestChips(
     selected: String?,
     onSelect: (String?) -> Unit,
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+    ) {
         FilterChip(
             selected = selected == null,
             onClick = { onSelect(null) },
@@ -295,7 +345,10 @@ private fun WindowChips(
     selectedId: String?,
     onSelect: (String?) -> Unit,
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+    ) {
         FilterChip(
             selected = selectedId == null,
             onClick = { onSelect(null) },
@@ -344,6 +397,21 @@ private fun ResultsHint(modifier: Modifier = Modifier) {
 }
 
 @Composable
+private fun ResultsEmpty(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(top = 24.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.explore_results_empty),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.outline,
+        )
+    }
+}
+
+@Composable
 private fun ErrorState(message: String, onRetry: () -> Unit, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
@@ -358,36 +426,6 @@ private fun ErrorState(message: String, onRetry: () -> Unit, modifier: Modifier 
         )
         Button(onClick = onRetry, modifier = Modifier.padding(top = 12.dp)) {
             Text(stringResource(R.string.content_retry))
-        }
-    }
-}
-
-@Composable
-private fun ResultsList(
-    opportunities: List<Opportunity>,
-    onOpportunityClick: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    if (opportunities.isEmpty()) {
-        Column(
-            modifier = modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(stringResource(R.string.explore_results_empty))
-        }
-        return
-    }
-    LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        items(opportunities, key = { it.id }) { opportunity ->
-            OpportunityCard(
-                opportunity = opportunity,
-                onClick = { onOpportunityClick(opportunity.id) },
-            )
         }
     }
 }
