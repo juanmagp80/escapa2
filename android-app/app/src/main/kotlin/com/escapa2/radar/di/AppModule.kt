@@ -3,8 +3,8 @@ package com.escapa2.radar.di
 import android.content.Context
 import androidx.room.Room
 import com.escapa2.radar.data.device.DeviceTokenProvider
+import com.escapa2.radar.data.device.FcmDeviceTokenProvider
 import com.escapa2.radar.data.device.NotificationPreferences
-import com.escapa2.radar.data.device.SharedPreferencesDeviceTokenProvider
 import com.escapa2.radar.data.device.SharedPreferencesNotificationPreferences
 import com.escapa2.radar.data.local.Escapa2Database
 import com.escapa2.radar.data.local.OpportunityDao
@@ -122,8 +122,7 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideDeviceTokenProvider(@ApplicationContext context: Context): DeviceTokenProvider =
-        SharedPreferencesDeviceTokenProvider(context)
+    fun provideDeviceTokenProvider(provider: FcmDeviceTokenProvider): DeviceTokenProvider = provider
 
     @Provides
     @Singleton

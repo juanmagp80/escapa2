@@ -7,6 +7,8 @@ import com.escapa2.radar.data.repository.FakeDeviceRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -38,6 +40,7 @@ class NotificationSettingsViewModelTest {
 
     private class FakeTokenProvider : DeviceTokenProvider {
         override val token: String = "android-viewmodel-token"
+        override val tokenUpdates: Flow<String> = flowOf(token)
     }
 
     private class FakePreferences : NotificationPreferences {

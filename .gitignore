@@ -18,6 +18,9 @@ build/
 *.env
 !.env.example
 
+# Firebase service account (secret, never commit)
+backend/*firebase-adminsdk*.json
+
 # Android / Gradle
 android-app/.gradle/
 android-app/local.properties

@@ -1,14 +1,18 @@
 package com.escapa2.radar.data.device
 
+import kotlinx.coroutines.flow.Flow
+
 /**
- * Provides the stable identifier sent to the backend when registering this
- * device for push notifications.
+ * Provides the push token registered with the backend for this device.
  *
- * Until Firebase Messaging is configured the token is a per-install generated
- * identifier. When FCM lands, the implementation should return the real
- * Firebase token so notifications can reach the device (AGENTS.md Fase 4).
+ * [token] is the current token and [tokenUpdates] emits the token whenever it
+ * changes (including the initial one once available), so the registrar can
+ * re-register on refresh. The real implementation returns the Firebase
+ * Messaging token; fakes are used in tests.
  */
 interface DeviceTokenProvider {
 
     val token: String
+
+    val tokenUpdates: Flow<String>
 }

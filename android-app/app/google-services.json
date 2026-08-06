@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "556536599232",
+    "project_id": "escapa2-e0196",
+    "storage_bucket": "escapa2-e0196.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:556536599232:android:af48c834232946d5dc1325",
+        "android_client_info": {
+          "package_name": "com.escapa2.radar"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCKg42uJvUWM-5bYQr6cG0TD34tSPdK4bo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
