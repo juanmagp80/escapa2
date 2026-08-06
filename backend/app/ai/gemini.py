@@ -9,6 +9,8 @@ from typing import TypeVar
 from pydantic import BaseModel
 
 from app.ai.schemas import (
+    DailyReportRequest,
+    DailyReportResponse,
     InterpretSearchRequest,
     InterpretSearchResponse,
     ItineraryAiRequest,
@@ -58,6 +60,15 @@ class GeminiAiProvider:
         return await self._with_retries(
             request_model=ItineraryAiResponse,
             prompt=self._build_itinerary_prompt(request),
+        )
+
+    async def generate_daily_report(
+        self,
+        request: DailyReportRequest,
+    ) -> DailyReportResponse:
+        return await self._with_retries(
+            request_model=DailyReportResponse,
+            prompt=self._build_daily_report_prompt(request),
         )
 
     async def _with_retries(
@@ -192,6 +203,47 @@ class GeminiAiProvider:
                 "- Do not invent opening hours, prices or reservations.",
                 "- If you are not sure, set estimated_cost_eur to null.",
                 "- Keep estimated_cost_eur null unless a real provider confirmed it.",
+                "- The output must be a plain JSON object with no extra text.",
+            ]
+        )
+        return "\n".join(lines)
+
+    @staticmethod
+    def _build_daily_report_prompt(request: DailyReportRequest) -> str:
+        """Builds a grounded daily report from confirmed price history."""
+        lines = [
+            "You write a short, personalized daily report for a couple that watches trip prices.",
+            "Return strictly valid JSON matching the requested schema.",
+            "",
+            "CONFIRMED_PROVIDER_DATA:",
+            f"- report date: {request.report_date.isoformat()}",
+        ]
+        for index, watch in enumerate(request.watches, start=1):
+            lines.append(f"- watch {index}: {watch.watch_name} -> {watch.destination}")
+            lines.append(f"  current total: {watch.current_total_eur:.2f} EUR")
+            if watch.previous_total_eur is not None:
+                lines.append(f"  previous total: {watch.previous_total_eur:.2f} EUR")
+            if watch.min_recorded_eur is not None:
+                lines.append(f"  min recorded: {watch.min_recorded_eur:.2f} EUR")
+            if watch.budget_eur is not None:
+                lines.append(f"  budget: {watch.budget_eur:.2f} EUR")
+            if watch.price_history:
+                points = ", ".join(
+                    f"{point.captured_at.date().isoformat()}={point.total_eur:.2f}"
+                    for point in watch.price_history
+                )
+                lines.append(f"  history: {points}")
+            for fact in watch.facts:
+                lines.append(f"  fact: {fact}")
+        lines.extend(
+            [
+                "",
+                "RULES:",
+                "- Only use the confirmed data above.",
+                "- Never invent prices, availability, timetables or fees.",
+                "- Compute change_eur and change_percent from the given numbers.",
+                "- Mark is_new_low only when the current price is a new minimum.",
+                "- Keep recommendations orientative, never financial advice.",
                 "- The output must be a plain JSON object with no extra text.",
             ]
         )

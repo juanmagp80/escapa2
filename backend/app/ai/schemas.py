@@ -121,3 +121,65 @@ class ItineraryAiResponse(BaseModel):
     warnings: list[str] = Field(default_factory=list)
     days: list[ItineraryDay]
     generated_by_ai: bool
+
+
+class DailyReportPricePoint(BaseModel):
+    """A captured price point used to explain the daily trend."""
+
+    captured_at: datetime
+    total_eur: float = Field(..., ge=0)
+
+
+class DailyReportWatchInput(BaseModel):
+    """One watched trip included in the daily report."""
+
+    watch_name: str = Field(..., min_length=1, max_length=120)
+    destination: str = Field(..., min_length=1, max_length=120)
+    current_total_eur: float = Field(..., ge=0)
+    previous_total_eur: float | None = Field(default=None, ge=0)
+    min_recorded_eur: float | None = Field(default=None, ge=0)
+    budget_eur: float | None = Field(default=None, ge=0)
+    price_history: list[DailyReportPricePoint] = Field(default_factory=list, max_length=60)
+    facts: list[str] = Field(default_factory=list, max_length=20)
+
+    @model_validator(mode="after")
+    def _clean_lists(self) -> DailyReportWatchInput:
+        self.facts = [fact.strip() for fact in self.facts if fact.strip()]
+        return self
+
+
+class DailyReportRequest(BaseModel):
+    """Confirmed price data for the watched trips to be summarized daily."""
+
+    report_date: date
+    watches: list[DailyReportWatchInput] = Field(..., min_length=1, max_length=20)
+
+    @model_validator(mode="after")
+    def _clean_watches(self) -> DailyReportRequest:
+        self.watches = [watch for watch in self.watches if watch.watch_name.strip()]
+        if not self.watches:
+            raise ValueError("watches must not be empty after cleaning")
+        return self
+
+
+class DailyReportOpportunityEntry(BaseModel):
+    """Per-watch result inside the daily report."""
+
+    watch_name: str
+    destination: str
+    change_eur: float | None = None
+    change_percent: float | None = None
+    is_new_low: bool
+    within_budget: bool | None = None
+    recommendation: str
+    confidence: Confidence
+
+
+class DailyReportResponse(BaseModel):
+    """Personalized daily summary of watched trip prices."""
+
+    headline: str
+    summary: str
+    entries: list[DailyReportOpportunityEntry] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    generated_by_ai: bool

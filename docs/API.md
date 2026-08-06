@@ -299,6 +299,64 @@ Salida:
 }
 ```
 
+### `POST /ai/daily-report`
+
+Genera un informe diario personalizado a partir del historial de precios
+confirmado de los viajes vigilados. La IA solo resume los datos aportados; nunca
+inventa precios ni disponibilidad.
+
+Entrada:
+
+```json
+{
+  "report_date": "2026-08-06",
+  "watches": [
+    {
+      "watch_name": "Porto finde",
+      "destination": "Porto",
+      "current_total_eur": 312.0,
+      "previous_total_eur": 328.0,
+      "min_recorded_eur": 312.0,
+      "budget_eur": 350.0,
+      "price_history": [
+        { "captured_at": "2026-08-05T12:00:00Z", "total_eur": 328.0 },
+        { "captured_at": "2026-08-06T12:00:00Z", "total_eur": 312.0 }
+      ],
+      "facts": ["Direct flight"]
+    }
+  ]
+}
+```
+
+Salida:
+
+```json
+{
+  "headline": "Porto bajó de precio hoy",
+  "summary": "Los precios verificados hoy bajan respecto al registro anterior en Porto (-16.00 EUR). Verifica la disponibilidad antes de reservar; los precios pueden cambiar.",
+  "entries": [
+    {
+      "watch_name": "Porto finde",
+      "destination": "Porto",
+      "change_eur": 16.0,
+      "change_percent": 4.9,
+      "is_new_low": true,
+      "within_budget": true,
+      "recommendation": "Nuevo mínimo registrado: es un buen momento para verificar y valorar la reserva.",
+      "confidence": "HIGH"
+    }
+  ],
+  "warnings": [
+    "Informe orientativo basado en datos verificados a la hora indicada.",
+    "Los precios y la disponibilidad pueden cambiar sin previo aviso."
+  ],
+  "generated_by_ai": false
+}
+```
+
+Con `GEMINI_ENABLED=false` el informe es determinista por reglas: calcula la
+bajada por viaje, detecta nuevos mínimos y comprueba el presupuesto.
+
 ### Límites y caché de IA
 
 - Cuota diaria por usuario: `GEMINI_MAX_REQUESTS_PER_USER_DAY` (por defecto 20).

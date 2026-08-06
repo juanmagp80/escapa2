@@ -8,6 +8,8 @@ from app.ai.fake import FakeAiProvider
 from app.ai.gemini import GeminiAiProvider
 from app.ai.rate_limit import AiRateLimiter
 from app.ai.schemas import (
+    DailyReportRequest,
+    DailyReportResponse,
     InterpretSearchRequest,
     InterpretSearchResponse,
     OpportunitySummaryRequest,
@@ -56,6 +58,30 @@ def _itinerary_payload() -> dict:
         "budget_eur": 350.0,
         "interests": ["gastronomía", "ciudad"],
         "facts": ["Hotel with free cancellation"],
+    }
+
+
+def _daily_report_payload() -> dict:
+    return {
+        "report_date": "2026-08-06",
+        "watches": [
+            {
+                "watch_name": "Porto finde",
+                "destination": "Porto",
+                "current_total_eur": 312.0,
+                "previous_total_eur": 328.0,
+                "min_recorded_eur": 312.0,
+                "budget_eur": 350.0,
+                "facts": ["Direct flight"],
+            },
+            {
+                "watch_name": "Sevilla puente",
+                "destination": "Sevilla",
+                "current_total_eur": 246.0,
+                "previous_total_eur": 240.0,
+                "budget_eur": 200.0,
+            },
+        ],
     }
 
 
@@ -156,6 +182,63 @@ def test_itinerary_rejects_inverted_range(client: TestClient) -> None:
     response = client.post("/api/v1/ai/itineraries", json=payload)
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+
+
+def test_daily_report_deterministic_reports_drop(client: TestClient) -> None:
+    response = client.post("/api/v1/ai/daily-report", json=_daily_report_payload())
+    assert response.status_code == 200
+    body = response.json()
+    assert body["generated_by_ai"] is False
+    assert "Porto" in body["headline"]
+    entries = {entry["destination"]: entry for entry in body["entries"]}
+    assert entries["Porto"]["change_eur"] == 16.0
+    assert entries["Porto"]["is_new_low"] is True
+    assert entries["Porto"]["within_budget"] is True
+    assert entries["Sevilla"]["is_new_low"] is False
+    assert entries["Sevilla"]["within_budget"] is False
+    assert any("Nuevo mínimo" in entry["recommendation"] for entry in body["entries"])
+
+
+def test_daily_report_empty_watches_after_clean_is_validation_error(
+    client: TestClient,
+) -> None:
+    payload = {"report_date": "2026-08-06", "watches": [{"watch_name": "  ", "destination": "X"}]}
+    response = client.post("/api/v1/ai/daily-report", json=payload)
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+
+
+def test_daily_report_requires_at_least_one_watch(client: TestClient) -> None:
+    response = client.post("/api/v1/ai/daily-report", json={"report_date": "2026-08-06"})
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+
+
+@pytest.mark.asyncio
+async def test_fake_daily_report_is_schema_valid() -> None:
+    provider = FakeAiProvider()
+    request = DailyReportRequest.model_validate(_daily_report_payload())
+    result = await provider.generate_daily_report(request)
+    assert isinstance(result, DailyReportResponse)
+    assert len(result.entries) == 2
+    assert all(entry.confidence.value == "HIGH" for entry in result.entries)
+
+
+class DailyReportFailingProvider(GeminiAiProvider):
+    def __init__(self) -> None:
+        super().__init__(Settings(gemini_enabled=True, gemini_api_key="test-key"))
+
+    async def generate_daily_report(self, _: DailyReportRequest) -> DailyReportResponse:
+        raise ProviderUnavailableError()
+
+
+@pytest.mark.asyncio
+async def test_ai_service_daily_report_falls_back_when_external_fails() -> None:
+    service = AiService(DailyReportFailingProvider(), model="gemini-3.6-flash")
+    request = DailyReportRequest.model_validate(_daily_report_payload())
+    result = await service.generate_daily_report(request, "user")
+    assert result.generated_by_ai is False
+    assert any("Nuevo mínimo" in entry.recommendation for entry in result.entries)
 
 
 def test_rate_limiter_blocks_after_quota() -> None:

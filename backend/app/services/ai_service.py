@@ -14,6 +14,7 @@ from pydantic import BaseModel
 
 from app.ai.cache import AiResponseCache
 from app.ai.fake import (
+    fallback_daily_report,
     fallback_interpretation,
     fallback_itinerary,
     fallback_summary,
@@ -22,6 +23,8 @@ from app.ai.gemini import GeminiAiProvider
 from app.ai.protocol import AiProvider
 from app.ai.rate_limit import AiRateLimiter
 from app.ai.schemas import (
+    DailyReportRequest,
+    DailyReportResponse,
     InterpretSearchRequest,
     InterpretSearchResponse,
     ItineraryAiRequest,
@@ -50,6 +53,7 @@ class AiService:
         self._summary_cache: AiResponseCache[OpportunitySummaryResponse] = AiResponseCache(model)
         self._interpret_cache: AiResponseCache[InterpretSearchResponse] = AiResponseCache(model)
         self._itinerary_cache: AiResponseCache[ItineraryAiResponse] = AiResponseCache(model)
+        self._daily_report_cache: AiResponseCache[DailyReportResponse] = AiResponseCache(model)
         self._external = isinstance(provider, GeminiAiProvider)
 
     @property
@@ -94,6 +98,19 @@ class AiService:
             self._itinerary_cache,
             self._provider.generate_itinerary,
             fallback_itinerary,
+        )
+
+    async def generate_daily_report(
+        self,
+        request: DailyReportRequest,
+        user_key: str,
+    ) -> DailyReportResponse:
+        return await self._call(
+            user_key,
+            request,
+            self._daily_report_cache,
+            self._provider.generate_daily_report,
+            fallback_daily_report,
         )
 
     async def _call(

@@ -8,6 +8,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from app.ai.schemas import (
+    DailyReportRequest,
+    DailyReportResponse,
     InterpretSearchRequest,
     InterpretSearchResponse,
     ItineraryAiRequest,
@@ -68,3 +70,18 @@ async def generate_itinerary(
 ) -> ItineraryAiResponse:
     """Generate an orientative structured itinerary from confirmed data."""
     return await service.generate_itinerary(payload, _user_key())
+
+
+@router.post(
+    "/daily-report",
+    response_model=DailyReportResponse,
+)
+async def generate_daily_report(
+    payload: DailyReportRequest,
+    service: AiServiceDep,
+) -> DailyReportResponse:
+    """Generate a personalized daily report from confirmed price history.
+
+    Falls back to deterministic rules when the AI provider is disabled or fails.
+    """
+    return await service.generate_daily_report(payload, _user_key())

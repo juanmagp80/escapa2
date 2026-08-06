@@ -46,6 +46,7 @@
 ## Fase 4 — Radar diario
 
 - ✅ Endpoint `/watches` (CRUD + run simulado) y Radar Android conectado al backend.
+- ✅ Endpoint `POST /ai/daily-report` (informe diario por reglas o Gemini, con fallback y caché).
 - Scheduler.
 - Snapshots.
 - Reglas de alerta.

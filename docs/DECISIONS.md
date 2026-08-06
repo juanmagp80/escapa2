@@ -123,3 +123,10 @@ Este documento registra las decisiones arquitectónicas relevantes del proyecto.
 - **Decisión:** El backend añade campos opcionales a `Opportunity` (`origin_city`, `interests`, `flight_cost_eur`, `hotel_cost_eur`, `route_cost_eur`, `booking_url`; migración `0004`) y el mock los rellena cuando el proveedor puede aportarlos. En Android: el detalle muestra desglose de costes y botón de reserva externo; el perfil permite añadir, habilitar/deshabilitar y eliminar aeropuertos; Explorar incluye origen, fechas libres (`/availability`), tipo de destino y el botón "Buscar escapada" (además de "Sorpréndeme"); el Home usa `AvailabilityRepository` para "próximas fechas libres". El filtro de noches se aplica localmente porque el backend aún no lo soporta.
 - **Consecuencias:** La app cubre el flujo completo del vertical slice sin fakes cuando el backend está disponible. El desglose y el enlace se muestran solo cuando el proveedor los aporta; nunca los inventa la IA.
 
+## ADR-018: Informe diario de IA con datos confirmados
+
+- **Estado:** Aceptada.
+- **Contexto:** El contrato AGENTS.md 10.6 incluye `POST /ai/daily-report`, pero el backend no lo exponía. El informe diario es el resumen personalizado del radar que Gemini debe generar a partir de los cambios de precios (AGENTS.md 5.1 y 16).
+- **Decisión:** Se añade `DailyReportRequest`/`DailyReportResponse` (schema con `watches`, precios actual/anterior, mínimo registrado, presupuesto e historial), el método `generate_daily_report` al protocolo `AiProvider`, la implementación de reglas en `FakeAiProvider`/fallback (calcula bajada, porcentaje, nuevo mínimo y encaje en presupuesto) y la de Gemini con un prompt anclado en datos confirmados. `AiService` lo expone con la misma caché y cuota diaria que el resto de endpoints.
+- **Consecuencias:** El informe nunca inventa precios: solo resume los datos aportados. Las alertas y el scheduler reales que generen el historial de precios llegarán con el resto de la Fase 4.
+

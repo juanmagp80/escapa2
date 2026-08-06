@@ -5,6 +5,8 @@ from __future__ import annotations
 from typing import Protocol
 
 from app.ai.schemas import (
+    DailyReportRequest,
+    DailyReportResponse,
     InterpretSearchRequest,
     InterpretSearchResponse,
     ItineraryAiRequest,
@@ -40,4 +42,11 @@ class AiProvider(Protocol):
         request: ItineraryAiRequest,
     ) -> ItineraryAiResponse:
         """Generate an orientative structured itinerary from confirmed data."""
+        ...
+
+    async def generate_daily_report(
+        self,
+        request: DailyReportRequest,
+    ) -> DailyReportResponse:
+        """Generate a personalized daily report from confirmed price history."""
         ...

@@ -7,6 +7,9 @@ from datetime import date, timedelta
 
 from app.ai.schemas import (
     Confidence,
+    DailyReportOpportunityEntry,
+    DailyReportRequest,
+    DailyReportResponse,
     InterpretSearchRequest,
     InterpretSearchResponse,
     ItineraryAiRequest,
@@ -84,6 +87,12 @@ class FakeAiProvider:
     ) -> ItineraryAiResponse:
         return _rule_based_itinerary(request)
 
+    async def generate_daily_report(
+        self,
+        request: DailyReportRequest,
+    ) -> DailyReportResponse:
+        return _rule_based_daily_report(request)
+
 
 async def fallback_summary(
     request: OpportunitySummaryRequest,
@@ -104,6 +113,13 @@ async def fallback_itinerary(
 ) -> ItineraryAiResponse:
     """Rule-based fallback for orientative itinerary generation."""
     return _rule_based_itinerary(request)
+
+
+async def fallback_daily_report(
+    request: DailyReportRequest,
+) -> DailyReportResponse:
+    """Rule-based fallback for the personalized daily report."""
+    return _rule_based_daily_report(request)
 
 
 def _rule_based_summary(
@@ -278,3 +294,108 @@ def _rule_based_itinerary(request: ItineraryAiRequest) -> ItineraryAiResponse:
         days=days,
         generated_by_ai=False,
     )
+
+
+_PRICE_DROP_PERCENT = 5.0
+_NEW_LOW_EUR = 0.0
+
+
+def _rule_based_daily_report(request: DailyReportRequest) -> DailyReportResponse:
+    """Aggregates confirmed price data into a rule-based daily report."""
+    entries: list[DailyReportOpportunityEntry] = []
+    for watch in request.watches:
+        previous = watch.previous_total_eur
+        change_eur: float | None = None
+        change_percent: float | None = None
+        if previous is not None:
+            change_eur = round(previous - watch.current_total_eur, 2)
+            if previous > 0:
+                change_percent = round((change_eur / previous) * 100, 1)
+
+        is_new_low = watch.min_recorded_eur is not None and (
+            watch.current_total_eur <= watch.min_recorded_eur + _NEW_LOW_EUR
+        )
+
+        within_budget: bool | None = (
+            None if watch.budget_eur is None else watch.current_total_eur <= watch.budget_eur
+        )
+
+        recommendation = _daily_recommendation(
+            change_eur=change_eur,
+            change_percent=change_percent,
+            is_new_low=is_new_low,
+            within_budget=within_budget,
+        )
+
+        entries.append(
+            DailyReportOpportunityEntry(
+                watch_name=watch.watch_name,
+                destination=watch.destination,
+                change_eur=change_eur,
+                change_percent=change_percent,
+                is_new_low=is_new_low,
+                within_budget=within_budget,
+                recommendation=recommendation,
+                confidence=Confidence.HIGH,
+            )
+        )
+
+    drops = [entry for entry in entries if (entry.change_eur or 0) > 0]
+    new_lows = [entry for entry in entries if entry.is_new_low]
+
+    if drops:
+        headline = (
+            f"{len(drops)} de {len(entries)} viajes vigilados bajaron de precio"
+            if len(drops) > 1
+            else f"{drops[0].destination} bajó de precio hoy"
+        )
+        summary = (
+            "Los precios verificados hoy bajan respecto al registro anterior en "
+            + ", ".join(f"{entry.destination} (-{entry.change_eur:.2f} EUR)" for entry in drops)
+            + ". Verifica la disponibilidad antes de reservar; los precios pueden cambiar."
+        )
+    elif new_lows:
+        headline = f"{new_lows[0].destination} marca un nuevo mínimo registrado"
+        summary = (
+            "Algunos viajes vigilados están en su mínimo registrado según las fuentes "
+            "consultadas. Confirma horarios y disponibilidad antes de tomar una decisión."
+        )
+    else:
+        headline = "Sin cambios importantes en tus viajes vigilados"
+        summary = (
+            "Los precios verificados hoy no presentan bajadas significativas frente al "
+            "registro anterior. Mantener el seguimiento activo permite detectar cambios."
+        )
+
+    warnings = [
+        "Informe orientativo basado en datos verificados a la hora indicada.",
+        "Los precios y la disponibilidad pueden cambiar sin previo aviso.",
+    ]
+
+    return DailyReportResponse(
+        headline=headline,
+        summary=summary,
+        entries=entries,
+        warnings=warnings,
+        generated_by_ai=False,
+    )
+
+
+def _daily_recommendation(
+    *,
+    change_eur: float | None,
+    change_percent: float | None,
+    is_new_low: bool,
+    within_budget: bool | None,
+) -> str:
+    if is_new_low:
+        return "Nuevo mínimo registrado: es un buen momento para verificar y valorar la reserva."
+    if change_eur is not None and change_eur > 0:
+        return f"Ha bajado {change_eur:.2f} EUR respecto al registro anterior."
+    if change_eur is not None and change_eur < 0:
+        return "El precio ha subido respecto al registro anterior."
+    if within_budget is True:
+        return "Dentro del presupuesto; puedes seguir vigilándolo."
+    if within_budget is False:
+        return "Por encima del presupuesto; conviene esperar una bajada."
+    return "Sin cambios significativos; se mantiene el seguimiento."
