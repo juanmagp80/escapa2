@@ -559,3 +559,63 @@ Respuesta:
 La evaluación es idempotente por seguimiento y oportunidad: cada ejecución
 añade un snapshot nuevo con su propio UUID y `captured_at`, por lo que el
 historial crece de forma natural hacia el radar diario.
+
+## Notificaciones push
+
+Base: `/api/v1/devices`.
+
+El registro de dispositivos usa un usuario de desarrollo fijo
+(`dev-user`) hasta que exista autenticación. El envío real usa Firebase Cloud
+Messaging cuando `FIREBASE_ENABLED=true`; en caso contrario se registra el envío
+simulado en el log.
+
+### `POST /devices`
+
+Registra un token de dispositivo para recibir notificaciones. Idempotente por
+`token` y usuario: si ya existe devuelve el registro existente.
+
+Entrada:
+
+```json
+{
+  "token": "device-token-123",
+  "platform": "android"
+}
+```
+
+Respuesta (`201`):
+
+```json
+{
+  "id": "e2000000-0000-4000-8000-000000000001",
+  "user_id": "dev-user",
+  "token": "device-token-123",
+  "platform": "android",
+  "created_at": "2026-08-06T12:00:00Z",
+  "updated_at": "2026-08-06T12:00:00Z"
+}
+```
+
+### `DELETE /devices/{token}`
+
+Elimina el registro de un token. `204` si se eliminó; `404` con `NOT_FOUND` si no
+existía.
+
+### Notificaciones del radar
+
+Al ejecutar el radar (`POST /watches/{id}/run` o el scheduler), si el seguimiento
+genera alertas se envía **un solo mensaje por seguimiento** a todos los tokens
+registrados del usuario, con un resumen de las alertas disparadas. Cada alerta se
+registra individualmente en el log con estado `SENT`, `SKIPPED` o `FAILED`.
+
+Tipos de notificación según la regla:
+
+| Regla                                   | Tipo            |
+| --------------------------------------- | --------------- |
+| `new_low`                               | `NEW_LOW`       |
+| `budget_match` / presupuesto            | `BUDGET_MATCH`  |
+| `consecutive_rise`                      | `PRICE_RISING`  |
+| resto (umbral, bajada absoluta, etc.)   | `PRICE_DROP`    |
+
+Un fallo del proveedor de notificaciones nunca interrumpe la ejecución del radar:
+el resto de la ejecución continúa y el envío se registra como `FAILED`.

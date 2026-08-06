@@ -4,23 +4,36 @@ from __future__ import annotations
 
 from app.ai.factory import build_ai_provider
 from app.ai.protocol import AiProvider
-from app.core.config import get_settings
+from app.core.config import Settings, get_settings
 from app.db.session import SessionLocal
 from app.providers.availability_provider import AvailabilityProvider
+from app.providers.device_repository import DeviceRepository
+from app.providers.factory import build_flight_provider, build_hotel_provider
+from app.providers.firebase_notification_sender import FirebaseNotificationSender
+from app.providers.flight_provider import FlightProvider
+from app.providers.hotel_provider import HotelProvider
 from app.providers.mock_availability_provider import MockAvailabilityProvider
+from app.providers.mock_device_repository import MockDeviceRepository
+from app.providers.mock_notification_log_repository import MockNotificationLogRepository
+from app.providers.mock_notification_sender import MockNotificationSender
 from app.providers.mock_opportunity_provider import MockOpportunityProvider
 from app.providers.mock_profile_provider import MockProfileProvider
 from app.providers.mock_search_watch_provider import MockSearchWatchProvider
+from app.providers.notification_log_repository import NotificationLogRepository
+from app.providers.notification_sender import NotificationSender
 from app.providers.opportunity_provider import OpportunityProvider
 from app.providers.profile_provider import ProfileProvider
 from app.providers.search_watch_provider import SearchWatchProvider
 from app.repositories.seed import seed_reference_opportunities
 from app.repositories.sql_availability_repository import SqlAvailabilityRepository
+from app.repositories.sql_device_repository import SqlDeviceRepository
+from app.repositories.sql_notification_log_repository import SqlNotificationLogRepository
 from app.repositories.sql_opportunity_repository import SqlOpportunityRepository
 from app.repositories.sql_profile_repository import SqlProfileRepository
 from app.repositories.sql_search_watch_repository import SqlSearchWatchRepository
 from app.services.ai_service import AiService
 from app.services.availability_service import AvailabilityService
+from app.services.notification_service import NotificationService
 from app.services.opportunity_service import OpportunityService
 from app.services.profile_service import ProfileService
 from app.services.radar_scheduler import RadarScheduler
@@ -33,6 +46,7 @@ _profile_provider: ProfileProvider | None = None
 _availability_provider: AvailabilityProvider | None = None
 _search_watch_provider: SearchWatchProvider | None = None
 _search_watch_service: SearchWatchService | None = None
+_notification_service: NotificationService | None = None
 
 
 def get_ai_provider() -> AiProvider:
@@ -158,4 +172,49 @@ def get_radar_scheduler() -> RadarScheduler:
     return RadarScheduler(
         get_search_watch_service(),
         interval_seconds=settings.scheduler_interval_seconds,
+        notifications=get_notification_service(),
     )
+
+
+def get_flight_provider() -> FlightProvider:
+    """Return the process-wide flight provider (Amadeus or mock)."""
+    return build_flight_provider(get_settings())
+
+
+def get_hotel_provider() -> HotelProvider:
+    """Return the process-wide hotel provider (Amadeus or mock)."""
+    return build_hotel_provider(get_settings())
+
+
+def _build_sender(settings: Settings) -> NotificationSender:
+    if settings.firebase_enabled:
+        return FirebaseNotificationSender(
+            settings.firebase_project_id,
+            settings.firebase_credentials_file,
+        )
+    return MockNotificationSender()
+
+
+def _build_device_repository(settings: Settings) -> DeviceRepository:
+    if settings.uses_sql_persistence:
+        return SqlDeviceRepository(SessionLocal)
+    return MockDeviceRepository()
+
+
+def _build_log_repository(settings: Settings) -> NotificationLogRepository:
+    if settings.uses_sql_persistence:
+        return SqlNotificationLogRepository(SessionLocal)
+    return MockNotificationLogRepository()
+
+
+def get_notification_service() -> NotificationService:
+    """Return a process-wide notification service."""
+    global _notification_service
+    if _notification_service is None:
+        settings = get_settings()
+        _notification_service = NotificationService(
+            _build_device_repository(settings),
+            _build_sender(settings),
+            _build_log_repository(settings),
+        )
+    return _notification_service

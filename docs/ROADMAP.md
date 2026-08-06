@@ -37,11 +37,15 @@
 
 ## Fase 3 — Vuelos y hoteles reales
 
-- Integración Amadeus.
-- Normalización.
-- Precios y expiración.
+- ✅ Proveedores normalizados detrás de interfaces (`FlightProvider`, `HotelProvider`).
+- ✅ `AmadeusClient` con autenticación OAuth2 (client credentials), caché de token y transporte inyectable para pruebas.
+- ✅ `AmadeusFlightProvider` (`/v2/shopping/flight-offers`) y `AmadeusHotelProvider` (`/v3/shopping/hotel-offers`) con modelos internos `FlightOffer`/`HotelOffer`.
+- ✅ Mocks deterministas y factoría de proveedores (`providers/factory.py`): Amadeus cuando `AMADEUS_ENABLED=true`, mocks por defecto.
+- ✅ Fail-fast al arrancar si un proveedor está activado sin credenciales (`validate_provider_credentials`).
+- ✅ Tests con `httpx.MockTransport` (token, errores, normalización de fechas a UTC, expiración, cuota como `PROVIDER_QUOTA_EXCEEDED`).
 - Historial.
 - Gestión de cuota.
+- Endpoints REST que expongan las ofertas reales de vuelos/hoteles (pendiente de la Fase 3 completa).
 
 ## Fase 4 — Radar diario
 
@@ -51,10 +55,13 @@
 - ✅ Historial de precios real en el detalle Android (`GET /opportunities/{id}/price-history`), conectado a los snapshots de cada ejecución del radar.
 - ✅ Scheduler diario en backend (`SCHEDULER_ENABLED`): ejecuta en un hilo los seguimientos activos cuyo `next_run_at` ha pasado; desactivado por defecto.
 - ✅ `POST /watches/daily-report`: informe diario generado desde los datos reales de los seguimientos (snapshots, mínimo registrado, cambio), con reglas o Gemini.
-- Snapshots.
-- Reglas de alerta.
-- Informe diario.
-- Firebase Cloud Messaging.
+- ✅ Snapshots.
+- ✅ Reglas de alerta.
+- ✅ Informe diario.
+- ✅ Registro de dispositivos y notificaciones push: `POST /devices`, `DELETE /devices/{token}`, `NotificationService` que envía un resumen por seguimiento al ejecutarse el radar y registra cada intento en el log con estado.
+- ✅ `FirebaseNotificationSender` (multicast) con `firebase-admin` importado perezosamente y fallback a `MockNotificationSender`; `NotificationDevice` + `NotificationLogORM` con migración Alembic `0005`.
+- ✅ Scheduler notifica tras cada ejecución del radar (alerta → push) sin romper la ejecución si el envío falla.
+- Integración Android: registro del token FCM y pantalla de ajustes de notificaciones.
 
 ## Fase 5 — Coche
 

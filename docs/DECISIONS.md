@@ -144,3 +144,17 @@ Este documento registra las decisiones arquitectónicas relevantes del proyecto.
 - **Decisión:** Implementar un `RadarScheduler` en `app/services/radar_scheduler.py` que arranca y se detiene con el lifespan de FastAPI cuando `SCHEDULER_ENABLED=true`. Cada `SCHEDULER_INTERVAL_SECONDS` (60 por defecto) selecciona los seguimientos `ACTIVE` cuyo `next_run_at` ha pasado (función pura `due_watches`) y los ejecuta con `SearchWatchService.run`, que ya registra snapshots y evalúa alertas. Un fallo en un watch no detiene el resto del lote.
 - **Consecuencias:** No se añade una dependencia nueva (sin APScheduler): un hilo `threading.Thread` daemon es suficiente para el MVP. La ejecución queda limitada a un único proceso: para producción habrá que migrar a un worker separado con bloqueo (Redis o base de datos) antes de habilitar varios réplicas.
 
+## ADR-021: Proveedores de vuelos y hoteles detrás de interfaces con Amadeus
+
+- **Estado:** Aceptada.
+- **Contexto:** AGENTS.md 7 prevé Amadeus Self-Service para vuelos y hoteles iniciales, con mocks como opción por defecto en desarrollo y credenciales opcionales.
+- **Decisión:** Se definen los protocolos `FlightProvider` y `HotelProvider` con modelos normalizados `FlightOffer`/`HotelOffer` en `app/domain/offers.py`. `AmadeusClient` gestiona OAuth2 client-credentials con caché de token y un `httpx.Client` con transporte inyectable para tests. `AmadeusFlightProvider` y `AmadeusHotelProvider` normalizan las respuestas a los modelos internos (fechas ISO a UTC, importes con moneda, expiración del precio). La factoría `build_flight_provider`/`build_hotel_provider` devuelve Amadeus cuando `AMADEUS_ENABLED=true` y mocks deterministas en caso contrario. `validate_provider_credentials()` falla al arrancar si un proveedor activado no tiene credenciales.
+- **Consecuencias:** El dominio nunca ve el JSON de Amadeus. Los tests usan `httpx.MockTransport` sin red real. Los endpoints REST que expongan ofertas se añadirán cuando se complete el flujo de búsqueda.
+
+## ADR-022: Notificaciones push con FCM detrás de una interfaz y registro de dispositivos
+
+- **Estado:** Aceptada.
+- **Contexto:** AGENTS.md 17 define los tipos de notificación (`NEW_LOW`, `PRICE_DROP`, `BUDGET_MATCH`, `NEW_OPPORTUNITY`, `PRICE_RISING`, `DAILY_REPORT`) y el radar diario (sección 16) debe avisar al usuario de alertas de precio. FCM llega en Fase 4.
+- **Decisión:** Tres protocolos: `NotificationSender` (envía a tokens), `DeviceRepository` (registro de tokens) y `NotificationLogRepository` (auditoría). Implementaciones SQL (`SqlDeviceRepository`, `SqlNotificationLogRepository`, migración `0005_notification_devices`) y mocks en memoria; `FirebaseNotificationSender` usa `firebase-admin` con import perezoso y cae a `MockNotificationSender` si `FIREBASE_ENABLED=false`. `NotificationService.notify_watch_run` envía **un solo mensaje por seguimiento** que resume las alertas disparadas y registra cada alerta con estado `SENT`/`SKIPPED`/`FAILED`, sin romper la ejecución del radar si el envío falla. El `RadarScheduler` recibe un `NotificationService` opcional y notifica tras cada ejecución. La API expone `POST /devices` y `DELETE /devices/{token}` con el usuario de desarrollo fijo.
+- **Consecuencias:** La base para FCM queda completa y testeada sin credenciales. Falta en Android el registro del token (Firebase Messaging) y su integración con `POST /devices` para recibir notificaciones reales.
+

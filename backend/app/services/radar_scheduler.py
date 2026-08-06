@@ -18,9 +18,12 @@ from datetime import UTC, datetime
 
 from app.domain.enums import WatchStatus
 from app.domain.search_watch import SearchWatch
-from app.services.search_watch_service import SearchWatchService
+from app.services.notification_service import NotificationService
+from app.services.search_watch_service import SearchWatchService, WatchRunAlert
 
 logger = logging.getLogger(__name__)
+
+DEV_USER_ID = "dev-user"
 
 
 def due_watches(watches: list[SearchWatch], now: datetime) -> list[SearchWatch]:
@@ -36,9 +39,15 @@ def due_watches(watches: list[SearchWatch], now: datetime) -> list[SearchWatch]:
 class RadarScheduler:
     """Background loop that runs due watches at a fixed interval."""
 
-    def __init__(self, service: SearchWatchService, interval_seconds: float) -> None:
+    def __init__(
+        self,
+        service: SearchWatchService,
+        interval_seconds: float,
+        notifications: NotificationService | None = None,
+    ) -> None:
         self._service = service
         self._interval_seconds = interval_seconds
+        self._notifications = notifications
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
@@ -81,9 +90,18 @@ class RadarScheduler:
                     len(result.matched_opportunities),
                     len(result.alerts),
                 )
+                self._notify(watch, result.alerts)
             except Exception:  # noqa: BLE001 - keep the loop alive
                 logger.exception("Radar run failed for watch=%s", watch.id)
         return len(due)
+
+    def _notify(self, watch: SearchWatch, alerts: list[WatchRunAlert]) -> None:
+        if self._notifications is None or not alerts:
+            return
+        try:
+            self._notifications.notify_watch_run(DEV_USER_ID, watch, alerts)
+        except Exception:  # noqa: BLE001 - notifications must not break the radar
+            logger.exception("Notification delivery failed for watch=%s", watch.id)
 
     def _loop(self) -> None:
         while not self._stop.wait(self._interval_seconds):

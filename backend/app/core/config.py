@@ -51,6 +51,18 @@ class Settings(BaseSettings):
         default=60.0, validation_alias="SCHEDULER_INTERVAL_SECONDS"
     )
 
+    amadeus_enabled: bool = Field(default=False, validation_alias="AMADEUS_ENABLED")
+    amadeus_client_id: str = Field(default="", validation_alias="AMADEUS_CLIENT_ID")
+    amadeus_client_secret: str = Field(default="", validation_alias="AMADEUS_CLIENT_SECRET")
+    amadeus_base_url: str = Field(
+        default="https://test.api.amadeus.com", validation_alias="AMADEUS_BASE_URL"
+    )
+    amadeus_timeout_seconds: float = Field(default=15.0, validation_alias="AMADEUS_TIMEOUT_SECONDS")
+
+    firebase_enabled: bool = Field(default=False, validation_alias="FIREBASE_ENABLED")
+    firebase_project_id: str = Field(default="", validation_alias="FIREBASE_PROJECT_ID")
+    firebase_credentials_file: str = Field(default="", validation_alias="FIREBASE_CREDENTIALS_FILE")
+
     @property
     def is_development(self) -> bool:
         return self.app_env == "development"
@@ -58,6 +70,17 @@ class Settings(BaseSettings):
     @property
     def uses_sql_persistence(self) -> bool:
         return self.persistence_backend == "sql"
+
+    def validate_provider_credentials(self) -> None:
+        """Fail fast when a provider is enabled without its credentials."""
+        if self.amadeus_enabled and not (self.amadeus_client_id and self.amadeus_client_secret):
+            raise RuntimeError(
+                "AMADEUS_ENABLED=true requires AMADEUS_CLIENT_ID and AMADEUS_CLIENT_SECRET"
+            )
+        if self.firebase_enabled and not self.firebase_credentials_file:
+            raise RuntimeError(
+                "FIREBASE_ENABLED=true requires FIREBASE_CREDENTIALS_FILE (service account JSON)"
+            )
 
 
 @lru_cache

@@ -19,6 +19,7 @@ from app.core.logging import configure_logging
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
+    settings.validate_provider_credentials()
     scheduler = None
     if settings.scheduler_enabled:
         scheduler = get_radar_scheduler()
