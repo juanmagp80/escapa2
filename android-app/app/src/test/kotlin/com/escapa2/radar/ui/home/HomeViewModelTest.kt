@@ -5,6 +5,7 @@ import com.escapa2.radar.data.model.Opportunity
 import com.escapa2.radar.data.model.OpportunitySearchFilters
 import com.escapa2.radar.data.model.SearchWatch
 import com.escapa2.radar.data.model.TransportMode
+import com.escapa2.radar.data.model.WatchRunResult
 import com.escapa2.radar.data.repository.AvailabilityRepository
 import com.escapa2.radar.data.repository.OpportunityRepository
 import com.escapa2.radar.data.repository.SearchWatchRepository
@@ -237,6 +238,14 @@ class HomeViewModelTest {
                 minRecordedEur = initialPriceEur,
                 alertRules = emptyList(),
                 priceHistory = listOf(initialPriceEur),
+            )
+
+        override suspend fun runWatch(id: String): WatchRunResult =
+            WatchRunResult(
+                lastRunAt = "2026-08-06T12:00:00Z",
+                nextRunAt = "2026-08-07T12:00:00Z",
+                matchedCount = 0,
+                alerts = emptyList(),
             )
     }
 }

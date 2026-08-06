@@ -6,6 +6,7 @@ import com.escapa2.radar.data.model.OpportunitySearchFilters
 import com.escapa2.radar.data.model.SearchWatch
 import com.escapa2.radar.data.model.TransportMode
 import com.escapa2.radar.data.model.TravelProfile
+import com.escapa2.radar.data.model.WatchRunResult
 import java.io.IOException
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -148,6 +149,7 @@ class FallbackRepositoriesTest {
     ) : SearchWatchRepository {
         override suspend fun getWatches(): List<SearchWatch> = throw error
         override suspend fun createWatch(name: String, initialPriceEur: Double): SearchWatch = throw error
+        override suspend fun runWatch(id: String): WatchRunResult = throw error
     }
 
     private inner class LocalSearchWatchRepository : SearchWatchRepository {
@@ -156,6 +158,14 @@ class FallbackRepositoriesTest {
 
         override suspend fun createWatch(name: String, initialPriceEur: Double): SearchWatch =
             localWatch.copy(id = "created-1", name = name)
+
+        override suspend fun runWatch(id: String): WatchRunResult =
+            WatchRunResult(
+                lastRunAt = "2026-08-06T12:00:00Z",
+                nextRunAt = "2026-08-07T12:00:00Z",
+                matchedCount = 1,
+                alerts = emptyList(),
+            )
     }
 
     companion object {

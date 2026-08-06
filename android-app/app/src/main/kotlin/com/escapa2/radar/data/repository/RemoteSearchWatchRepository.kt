@@ -1,6 +1,7 @@
 package com.escapa2.radar.data.repository
 
 import com.escapa2.radar.data.model.SearchWatch
+import com.escapa2.radar.data.model.WatchRunResult
 import com.escapa2.radar.data.remote.Escapa2Api
 import com.escapa2.radar.data.remote.dto.SearchWatchCreateDto
 import com.escapa2.radar.data.remote.dto.defaultAlertRules
@@ -25,4 +26,7 @@ class RemoteSearchWatchRepository(
                 alertRules = defaultAlertRules(),
             ),
         ).toDomain()
+
+    override suspend fun runWatch(id: String): WatchRunResult =
+        api.runWatch(id).toDomain()
 }

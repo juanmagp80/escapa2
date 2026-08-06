@@ -34,6 +34,11 @@
     <string name="radar_alert_rules">Reglas de alerta</string>
     <string name="radar_price_history">Historial de precios</string>
     <string name="radar_status_active">Activo</string>
+    <string name="radar_run_now">Ejecutar ahora</string>
+    <string name="radar_run_running">Ejecutando…</string>
+    <string name="radar_run_no_alerts">Sin cambios significativos respecto al historial registrado.</string>
+    <string name="radar_run_error">No se pudo ejecutar la búsqueda: %1$s</string>
+    <string name="radar_run_checked">Verificado a esta hora</string>
     <string name="profile_title">Perfil</string>
     <string name="profile_origin_city">Ciudad de salida</string>
     <string name="profile_currency">Moneda</string>

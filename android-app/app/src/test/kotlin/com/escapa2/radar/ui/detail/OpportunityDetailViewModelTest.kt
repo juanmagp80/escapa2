@@ -9,6 +9,7 @@ import com.escapa2.radar.data.repository.FakeAiRepository
 import com.escapa2.radar.data.repository.OpportunityRepository
 import com.escapa2.radar.data.repository.SearchWatchRepository
 import com.escapa2.radar.data.model.SearchWatch
+import com.escapa2.radar.data.model.WatchRunResult
 import com.escapa2.radar.ui.components.UiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -206,6 +207,14 @@ class OpportunityDetailViewModelTest {
             created.add(watch)
             return watch
         }
+
+        override suspend fun runWatch(id: String): WatchRunResult =
+            WatchRunResult(
+                lastRunAt = "2026-08-06T12:00:00Z",
+                nextRunAt = "2026-08-07T12:00:00Z",
+                matchedCount = 0,
+                alerts = emptyList(),
+            )
     }
 
     private class FailingWatchRepository : SearchWatchRepository {
@@ -213,6 +222,9 @@ class OpportunityDetailViewModelTest {
             throw IllegalStateException("backend unavailable")
 
         override suspend fun createWatch(name: String, initialPriceEur: Double): SearchWatch =
+            throw IllegalStateException("backend unavailable")
+
+        override suspend fun runWatch(id: String): WatchRunResult =
             throw IllegalStateException("backend unavailable")
     }
 }

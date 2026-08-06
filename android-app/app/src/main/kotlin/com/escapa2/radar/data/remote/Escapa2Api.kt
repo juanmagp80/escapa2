@@ -10,6 +10,7 @@ import com.escapa2.radar.data.remote.dto.ProfileDto
 import com.escapa2.radar.data.remote.dto.ProfileUpdateDto
 import com.escapa2.radar.data.remote.dto.SearchWatchCreateDto
 import com.escapa2.radar.data.remote.dto.SearchWatchDto
+import com.escapa2.radar.data.remote.dto.WatchRunResultDto
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -64,6 +65,9 @@ interface Escapa2Api {
 
     @POST("watches")
     suspend fun createWatch(@Body body: SearchWatchCreateDto): SearchWatchDto
+
+    @POST("watches/{id}/run")
+    suspend fun runWatch(@Path("id") id: String): WatchRunResultDto
 
     @GET("availability")
     suspend fun getAvailabilityWindows(): List<AvailabilityWindowDto>

@@ -1,6 +1,7 @@
 package com.escapa2.radar.data.repository
 
 import com.escapa2.radar.data.model.SearchWatch
+import com.escapa2.radar.data.model.WatchRunResult
 
 /**
  * Tries the backend /watches endpoints and falls back to the local source on
@@ -28,6 +29,17 @@ class FallbackSearchWatchRepository(
         } catch (throwable: Throwable) {
             if (NetworkFallback.shouldFallBack(throwable)) {
                 local.createWatch(name, initialPriceEur)
+            } else {
+                throw throwable
+            }
+        }
+
+    override suspend fun runWatch(id: String): WatchRunResult =
+        try {
+            remote.runWatch(id)
+        } catch (throwable: Throwable) {
+            if (NetworkFallback.shouldFallBack(throwable)) {
+                local.runWatch(id)
             } else {
                 throw throwable
             }
