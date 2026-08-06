@@ -6,14 +6,17 @@ import com.escapa2.radar.data.remote.dto.AiSummaryRequestDto
 import com.escapa2.radar.data.remote.dto.AirportPreferenceDto
 import com.escapa2.radar.data.remote.dto.AvailabilityWindowDto
 import com.escapa2.radar.data.remote.dto.DailyReportResponseDto
+import com.escapa2.radar.data.remote.dto.DeviceRegistrationDto
 import com.escapa2.radar.data.remote.dto.OpportunityDto
 import com.escapa2.radar.data.remote.dto.PriceSnapshotDto
 import com.escapa2.radar.data.remote.dto.ProfileDto
 import com.escapa2.radar.data.remote.dto.ProfileUpdateDto
+import com.escapa2.radar.data.remote.dto.RegisterDeviceRequestDto
 import com.escapa2.radar.data.remote.dto.SearchWatchCreateDto
 import com.escapa2.radar.data.remote.dto.SearchWatchDto
 import com.escapa2.radar.data.remote.dto.WatchRunResultDto
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
@@ -79,4 +82,10 @@ interface Escapa2Api {
 
     @GET("availability")
     suspend fun getAvailabilityWindows(): List<AvailabilityWindowDto>
+
+    @POST("devices")
+    suspend fun registerDevice(@Body body: RegisterDeviceRequestDto): DeviceRegistrationDto
+
+    @DELETE("devices/{token}")
+    suspend fun unregisterDevice(@Path("token") token: String)
 }

@@ -61,7 +61,7 @@
 - ✅ Registro de dispositivos y notificaciones push: `POST /devices`, `DELETE /devices/{token}`, `NotificationService` que envía un resumen por seguimiento al ejecutarse el radar y registra cada intento en el log con estado.
 - ✅ `FirebaseNotificationSender` (multicast) con `firebase-admin` importado perezosamente y fallback a `MockNotificationSender`; `NotificationDevice` + `NotificationLogORM` con migración Alembic `0005`.
 - ✅ Scheduler notifica tras cada ejecución del radar (alerta → push) sin romper la ejecución si el envío falla.
-- Integración Android: registro del token FCM y pantalla de ajustes de notificaciones.
+- ✅ Android registra el dispositivo en el backend (`POST /devices`): token estable por instalación (SharedPreferences), repositorio con fallback local, auto-registro al arrancar si está activado e interruptor "Notificaciones push" en Perfil. Cuando exista Firebase configurado, el token se sustituirá por el real de FCM.
 
 ## Fase 5 — Coche
 

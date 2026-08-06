@@ -19,6 +19,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -59,10 +60,12 @@ private val AVOID_OPTIONS = listOf(
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel(),
+    notificationViewModel: NotificationSettingsViewModel = hiltViewModel(),
 ) {
     val form by viewModel.form.collectAsStateWithLifecycle()
     val loadState by viewModel.loadState.collectAsStateWithLifecycle()
     val saveState by viewModel.saveState.collectAsStateWithLifecycle()
+    val notificationsEnabled by notificationViewModel.notificationsEnabled.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedSaveFeedback(saveState, snackbarHostState)
@@ -90,6 +93,8 @@ fun ProfileScreen(
                 onToggleAirport = viewModel::toggleAirportEnabled,
                 onRemoveAirport = viewModel::removeAirport,
                 onAddAirport = viewModel::addAirport,
+                notificationsEnabled = notificationsEnabled,
+                onNotificationsChange = notificationViewModel::setNotificationsEnabled,
                 onSave = viewModel::save,
                 modifier = Modifier.padding(padding),
             )
@@ -125,6 +130,8 @@ private fun ProfileForm(
     onToggleAirport: (String) -> Unit,
     onRemoveAirport: (String) -> Unit,
     onAddAirport: (String) -> Unit,
+    notificationsEnabled: Boolean,
+    onNotificationsChange: (Boolean) -> Unit,
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -187,6 +194,11 @@ private fun ProfileForm(
             onToggle = onToggleAirport,
             onRemove = onRemoveAirport,
             onAdd = onAddAirport,
+        )
+        HorizontalDivider()
+        NotificationSwitch(
+            enabled = notificationsEnabled,
+            onEnabledChange = onNotificationsChange,
         )
         Button(
             onClick = onSave,
@@ -276,6 +288,31 @@ private fun AirportSection(
                 Text(stringResource(R.string.profile_airport_add))
             }
         }
+    }
+}
+
+@Composable
+private fun NotificationSwitch(
+    enabled: Boolean,
+    onEnabledChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.profile_notifications),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = stringResource(R.string.profile_notifications_subtitle),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.outline,
+            )
+        }
+        Switch(checked = enabled, onCheckedChange = onEnabledChange)
     }
 }
 

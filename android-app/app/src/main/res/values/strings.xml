@@ -71,6 +71,8 @@
     <string name="profile_avoid_nightlife">Vida nocturna</string>
     <string name="profile_avoid_tourists">Zonas muy turísticas</string>
     <string name="profile_avoid_driving">Conducción larga</string>
+    <string name="profile_notifications">Notificaciones push</string>
+    <string name="profile_notifications_subtitle">Avísame cuando cambien los precios de los viajes vigilados en el radar.</string>
     <string name="content_empty">Todavía no hay escapadas.</string>
     <string name="content_error">No se pudo cargar la información.</string>
     <string name="content_retry">Reintentar</string>

@@ -601,6 +601,10 @@ Respuesta (`201`):
 Elimina el registro de un token. `204` si se eliminó; `404` con `NOT_FOUND` si no
 existía.
 
+La app Android registra un token estable por instalación mediante este endpoint
+mientras no esté configurado Firebase Messaging; al habilitar FCM se usará el
+token real de Firebase.
+
 ### Notificaciones del radar
 
 Al ejecutar el radar (`POST /watches/{id}/run` o el scheduler), si el seguimiento

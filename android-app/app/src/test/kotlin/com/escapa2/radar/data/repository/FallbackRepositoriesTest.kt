@@ -3,6 +3,7 @@ package com.escapa2.radar.data.repository
 import com.escapa2.radar.data.model.AiSummary
 import com.escapa2.radar.data.model.DailyReport
 import com.escapa2.radar.data.model.DailyReportEntry
+import com.escapa2.radar.data.model.DeviceRegistration
 import com.escapa2.radar.data.model.Opportunity
 import com.escapa2.radar.data.model.OpportunitySearchFilters
 import com.escapa2.radar.data.model.PriceSnapshot
@@ -104,6 +105,27 @@ class FallbackRepositoriesTest {
         }
     }
 
+    @Test
+    fun deviceRepositoryFallsBackOnIOException() {
+        val remote = FailingDeviceRepository(IOException("no network"))
+        val fallback = FallbackDeviceRepository(remote, LocalDeviceRepository())
+
+        runBlocking {
+            assertEquals("local-device", fallback.register("android-token-1").id)
+            fallback.unregister("android-token-1")
+        }
+    }
+
+    @Test
+    fun deviceRepositoryRethrowsNonNetworkErrors() {
+        val remote = FailingDeviceRepository(IllegalArgumentException("bad request"))
+        val fallback = FallbackDeviceRepository(remote, LocalDeviceRepository())
+
+        assertThrows(IllegalArgumentException::class.java) {
+            runBlocking { fallback.register("android-token-1") }
+        }
+    }
+
     private fun assertThrows(expected: Class<out Throwable>, block: () -> Unit) {
         try {
             block()
@@ -179,6 +201,25 @@ class FallbackRepositoriesTest {
         override suspend fun getWatches(): List<SearchWatch> = throw error
         override suspend fun createWatch(name: String, initialPriceEur: Double): SearchWatch = throw error
         override suspend fun runWatch(id: String): WatchRunResult = throw error
+    }
+
+    private inner class FailingDeviceRepository(
+        private val error: Throwable,
+    ) : DeviceRepository {
+        override suspend fun register(token: String): DeviceRegistration = throw error
+        override suspend fun unregister(token: String) = throw error
+    }
+
+    private inner class LocalDeviceRepository : DeviceRepository {
+        override suspend fun register(token: String): DeviceRegistration =
+            DeviceRegistration(
+                id = "local-device",
+                userId = "dev-user",
+                token = token,
+                platform = "android",
+            )
+
+        override suspend fun unregister(token: String) = Unit
     }
 
     private inner class LocalSearchWatchRepository : SearchWatchRepository {
