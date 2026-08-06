@@ -3,6 +3,7 @@ package com.escapa2.radar.data.repository
 import com.escapa2.radar.data.model.AiSummary
 import com.escapa2.radar.data.model.Opportunity
 import com.escapa2.radar.data.model.OpportunitySearchFilters
+import com.escapa2.radar.data.model.PriceSnapshot
 import com.escapa2.radar.data.model.SearchWatch
 import com.escapa2.radar.data.model.TransportMode
 import com.escapa2.radar.data.model.TravelProfile
@@ -97,6 +98,7 @@ class FallbackRepositoriesTest {
         override suspend fun getOpportunities(): List<Opportunity> = throw error
         override suspend fun getOpportunity(id: String): Opportunity? = throw error
         override suspend fun search(filters: OpportunitySearchFilters): List<Opportunity> = throw error
+        override suspend fun getPriceHistory(id: String): List<PriceSnapshot> = throw error
     }
 
     private inner class FakeLocalOpportunityRepository : OpportunityRepository {
@@ -104,6 +106,7 @@ class FallbackRepositoriesTest {
         override suspend fun getOpportunity(id: String): Opportunity? =
             localOpportunities.firstOrNull { it.id == id }
         override suspend fun search(filters: OpportunitySearchFilters): List<Opportunity> = localOpportunities
+        override suspend fun getPriceHistory(id: String): List<PriceSnapshot> = emptyList()
     }
 
     private inner class FailingAiRepository(

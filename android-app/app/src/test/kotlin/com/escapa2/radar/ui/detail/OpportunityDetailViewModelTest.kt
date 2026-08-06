@@ -3,6 +3,7 @@ package com.escapa2.radar.ui.detail
 import com.escapa2.radar.data.model.AiSummary
 import com.escapa2.radar.data.model.Opportunity
 import com.escapa2.radar.data.model.OpportunitySearchFilters
+import com.escapa2.radar.data.model.PriceSnapshot
 import com.escapa2.radar.data.model.TransportMode
 import com.escapa2.radar.data.repository.AiRepository
 import com.escapa2.radar.data.repository.FakeAiRepository
@@ -114,6 +115,24 @@ class OpportunityDetailViewModelTest {
     }
 
     @Test
+    fun loadExposesPriceHistoryWhenRepositoryProvidesSnapshots() = runTest(dispatcher.scheduler) {
+        val viewModel = OpportunityDetailViewModel(
+            HistoryRepository(),
+            FakeAiRepository(),
+            StaticWatchRepository(),
+        )
+        viewModel.load("opp-1")
+        advanceUntilIdle()
+
+        val historyState = viewModel.priceHistory.value
+        assertTrue(historyState is UiState.Content)
+        val history = (historyState as UiState.Content).data
+        assertEquals(2, history.size)
+        assertEquals("2026-08-02T12:00:00Z", history[0].capturedAt)
+        assertEquals("2026-08-05T12:00:00Z", history[1].capturedAt)
+    }
+
+    @Test
     fun followCreatesWatchAndExposesContent() = runTest(dispatcher.scheduler) {
         val watchRepository = StaticWatchRepository()
         val viewModel = OpportunityDetailViewModel(
@@ -171,6 +190,29 @@ class OpportunityDetailViewModelTest {
             opportunity.takeIf { it.id == id }
         override suspend fun search(filters: OpportunitySearchFilters): List<Opportunity> =
             listOf(opportunity)
+        override suspend fun getPriceHistory(id: String): List<PriceSnapshot> = emptyList()
+    }
+
+    private inner class HistoryRepository : OpportunityRepository {
+        override suspend fun getOpportunities(): List<Opportunity> = listOf(sampleOpportunity())
+        override suspend fun getOpportunity(id: String): Opportunity? =
+            sampleOpportunity().takeIf { it.id == id }
+        override suspend fun search(filters: OpportunitySearchFilters): List<Opportunity> =
+            listOf(sampleOpportunity())
+        override suspend fun getPriceHistory(id: String): List<PriceSnapshot> = listOf(
+            PriceSnapshot(
+                id = "snap-1",
+                totalCostEur = 212.0,
+                capturedAt = "2026-08-02T12:00:00Z",
+                source = "mock",
+            ),
+            PriceSnapshot(
+                id = "snap-2",
+                totalCostEur = 198.0,
+                capturedAt = "2026-08-05T12:00:00Z",
+                source = "mock",
+            ),
+        )
     }
 
     private class FailingRepository : OpportunityRepository {
@@ -179,6 +221,8 @@ class OpportunityDetailViewModelTest {
         override suspend fun getOpportunity(id: String): Opportunity? =
             throw IllegalStateException("backend unavailable")
         override suspend fun search(filters: OpportunitySearchFilters): List<Opportunity> =
+            throw IllegalStateException("backend unavailable")
+        override suspend fun getPriceHistory(id: String): List<PriceSnapshot> =
             throw IllegalStateException("backend unavailable")
     }
 

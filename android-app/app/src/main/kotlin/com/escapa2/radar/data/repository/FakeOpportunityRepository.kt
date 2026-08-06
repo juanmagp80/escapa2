@@ -2,6 +2,7 @@ package com.escapa2.radar.data.repository
 
 import com.escapa2.radar.data.model.Opportunity
 import com.escapa2.radar.data.model.OpportunitySearchFilters
+import com.escapa2.radar.data.model.PriceSnapshot
 import com.escapa2.radar.data.model.TransportMode
 import javax.inject.Inject
 
@@ -20,6 +21,30 @@ class FakeOpportunityRepository @Inject constructor() : OpportunityRepository {
 
     override suspend fun search(filters: OpportunitySearchFilters): List<Opportunity> =
         filterOpportunities(opportunities, filters)
+
+    override suspend fun getPriceHistory(id: String): List<PriceSnapshot> {
+        val opportunity = opportunities.firstOrNull { it.id == id } ?: return emptyList()
+        return buildList {
+            opportunity.previousTotalCostEur?.let { previous ->
+                add(
+                    PriceSnapshot(
+                        id = "$id-prev",
+                        totalCostEur = previous,
+                        capturedAt = "2026-08-02T12:00:00Z",
+                        source = "mock",
+                    ),
+                )
+            }
+            add(
+                PriceSnapshot(
+                    id = "$id-current",
+                    totalCostEur = opportunity.totalCostEur,
+                    capturedAt = opportunity.verifiedAt,
+                    source = "mock",
+                ),
+            )
+        }
+    }
 
     private companion object {
         val opportunities: List<Opportunity> = listOf(

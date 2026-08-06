@@ -5,6 +5,7 @@ import com.escapa2.radar.data.local.toDomain
 import com.escapa2.radar.data.local.toEntity
 import com.escapa2.radar.data.model.Opportunity
 import com.escapa2.radar.data.model.OpportunitySearchFilters
+import com.escapa2.radar.data.model.PriceSnapshot
 
 /**
  * Repository that caches remote/fake results into Room.
@@ -29,6 +30,13 @@ class CachedOpportunityRepository(
 
     override suspend fun search(filters: OpportunitySearchFilters): List<Opportunity> =
         getOrFallback { source.search(filters) }
+
+    override suspend fun getPriceHistory(id: String): List<PriceSnapshot> =
+        try {
+            source.getPriceHistory(id)
+        } catch (e: Exception) {
+            emptyList()
+        }
 
     private suspend fun getOrFallback(block: suspend () -> List<Opportunity>): List<Opportunity> {
         return try {

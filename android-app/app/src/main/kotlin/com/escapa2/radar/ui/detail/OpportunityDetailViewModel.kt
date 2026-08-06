@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.escapa2.radar.data.model.AiSummary
 import com.escapa2.radar.data.model.Opportunity
+import com.escapa2.radar.data.model.PriceSnapshot
 import com.escapa2.radar.data.repository.AiRepository
 import com.escapa2.radar.data.repository.OpportunityRepository
 import com.escapa2.radar.data.repository.SearchWatchRepository
@@ -28,6 +29,9 @@ class OpportunityDetailViewModel @Inject constructor(
     private val _summary = MutableStateFlow<UiState<AiSummary>?>(null)
     val summary: StateFlow<UiState<AiSummary>?> = _summary.asStateFlow()
 
+    private val _priceHistory = MutableStateFlow<UiState<List<PriceSnapshot>>?>(null)
+    val priceHistory: StateFlow<UiState<List<PriceSnapshot>>?> = _priceHistory.asStateFlow()
+
     private val _followState = MutableStateFlow<UiState<Unit>?>(null)
     val followState: StateFlow<UiState<Unit>?> = _followState.asStateFlow()
 
@@ -37,6 +41,7 @@ class OpportunityDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = UiState.Loading
             _summary.value = null
+            _priceHistory.value = null
             _followState.value = null
             try {
                 val opportunity = repository.getOpportunity(opportunityId)
@@ -46,6 +51,7 @@ class OpportunityDetailViewModel @Inject constructor(
                     currentOpportunity = opportunity
                     _uiState.value = UiState.Content(opportunity)
                     loadSummary(opportunity)
+                    loadPriceHistory(opportunityId)
                 }
             } catch (e: Exception) {
                 _uiState.value = UiState.Error(e.message ?: "Unexpected error")
@@ -74,6 +80,22 @@ class OpportunityDetailViewModel @Inject constructor(
             _summary.value = UiState.Loading
             _summary.value = try {
                 UiState.Content(aiRepository.summarizeOpportunity(opportunity))
+            } catch (e: Exception) {
+                UiState.Error(e.message ?: "Unexpected error")
+            }
+        }
+    }
+
+    private fun loadPriceHistory(opportunityId: String) {
+        viewModelScope.launch {
+            _priceHistory.value = UiState.Loading
+            _priceHistory.value = try {
+                val history = repository.getPriceHistory(opportunityId)
+                if (history.isEmpty()) {
+                    UiState.Empty
+                } else {
+                    UiState.Content(history.sortedBy { it.capturedAt })
+                }
             } catch (e: Exception) {
                 UiState.Error(e.message ?: "Unexpected error")
             }

@@ -2,6 +2,7 @@ package com.escapa2.radar.data.repository
 
 import com.escapa2.radar.data.model.Opportunity
 import com.escapa2.radar.data.model.OpportunitySearchFilters
+import com.escapa2.radar.data.model.PriceSnapshot
 import com.escapa2.radar.data.remote.Escapa2Api
 import com.escapa2.radar.data.remote.dto.toDomain
 
@@ -20,6 +21,9 @@ class RemoteOpportunityRepository(
 
     override suspend fun getOpportunity(id: String): Opportunity? =
         api.getOpportunity(id).toDomain()
+
+    override suspend fun getPriceHistory(id: String): List<PriceSnapshot> =
+        api.getPriceHistory(id).map { it.toDomain() }
 
     override suspend fun search(filters: OpportunitySearchFilters): List<Opportunity> {
         val results = api.searchOpportunities(

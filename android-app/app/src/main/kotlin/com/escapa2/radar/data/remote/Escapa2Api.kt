@@ -6,6 +6,7 @@ import com.escapa2.radar.data.remote.dto.AiSummaryRequestDto
 import com.escapa2.radar.data.remote.dto.AirportPreferenceDto
 import com.escapa2.radar.data.remote.dto.AvailabilityWindowDto
 import com.escapa2.radar.data.remote.dto.OpportunityDto
+import com.escapa2.radar.data.remote.dto.PriceSnapshotDto
 import com.escapa2.radar.data.remote.dto.ProfileDto
 import com.escapa2.radar.data.remote.dto.ProfileUpdateDto
 import com.escapa2.radar.data.remote.dto.SearchWatchCreateDto
@@ -31,6 +32,9 @@ interface Escapa2Api {
 
     @GET("opportunities/{id}")
     suspend fun getOpportunity(@Path("id") id: String): OpportunityDto
+
+    @GET("opportunities/{id}/price-history")
+    suspend fun getPriceHistory(@Path("id") id: String): List<PriceSnapshotDto>
 
     @GET("opportunities")
     suspend fun searchOpportunities(

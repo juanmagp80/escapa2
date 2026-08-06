@@ -43,6 +43,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.escapa2.radar.R
 import com.escapa2.radar.data.model.AiSummary
 import com.escapa2.radar.data.model.Opportunity
+import com.escapa2.radar.data.model.PriceSnapshot
 import com.escapa2.radar.ui.components.UiState
 import java.util.Locale
 
@@ -54,6 +55,7 @@ fun OpportunityDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val summaryState by viewModel.summary.collectAsStateWithLifecycle()
+    val priceHistory by viewModel.priceHistory.collectAsStateWithLifecycle()
     val followState by viewModel.followState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(opportunityId) { viewModel.load(opportunityId) }
@@ -99,6 +101,7 @@ fun OpportunityDetailScreen(
         is UiState.Content -> DetailContent(
             opportunity = state.data,
             summaryState = summaryState,
+            priceHistoryState = priceHistory,
             followState = followState,
             onBack = onBack,
             onFollow = viewModel::follow,
@@ -139,6 +142,7 @@ private fun DetailScaffold(
 private fun DetailContent(
     opportunity: Opportunity,
     summaryState: UiState<AiSummary>?,
+    priceHistoryState: UiState<List<PriceSnapshot>>?,
     followState: UiState<Unit>?,
     onBack: () -> Unit,
     onFollow: () -> Unit,
@@ -193,7 +197,7 @@ private fun DetailContent(
             }
             CostBreakdownSection(opportunity = opportunity)
             BookingLinkSection(bookingUrl = opportunity.bookingUrl)
-            PriceHistorySection(opportunity = opportunity)
+            PriceHistorySection(opportunity = opportunity, historyState = priceHistoryState)
             AiSummarySection(summaryState = summaryState)
             Button(
                 onClick = onFollow,
@@ -257,20 +261,31 @@ private fun BookingLinkSection(bookingUrl: String?) {
 }
 
 @Composable
-private fun PriceHistorySection(opportunity: Opportunity) {
-    val previous = opportunity.previousTotalCostEur ?: return
-    val change = previous - opportunity.totalCostEur
+private fun PriceHistorySection(
+    opportunity: Opportunity,
+    historyState: UiState<List<PriceSnapshot>>?,
+) {
     SectionCard(title = stringResource(R.string.detail_price_history)) {
-        MetricRow(
-            label = stringResource(R.string.detail_price_previous),
-            value = previous.formatEur(),
-        )
-        MetricRow(
-            label = stringResource(R.string.detail_price_current),
-            value = opportunity.totalCostEur.formatEur(),
-            emphasized = true,
-        )
-        if (change != 0.0) {
+        when (historyState) {
+            null, is UiState.Loading -> CircularProgressIndicator(modifier = Modifier.padding(top = 8.dp))
+            is UiState.Empty -> Unit
+            is UiState.Error -> Unit
+            is UiState.Content -> {
+                historyState.data.forEachIndexed { index, snapshot ->
+                    if (index > 0) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+                    MetricRow(
+                        label = snapshot.capturedAt,
+                        value = snapshot.totalCostEur?.formatEur() ?: "—",
+                    )
+                }
+            }
+        }
+        val previous = opportunity.previousTotalCostEur
+        if (previous != null && previous != opportunity.totalCostEur) {
+            val change = previous - opportunity.totalCostEur
+            HorizontalDivider(modifier = Modifier.padding(top = 8.dp, bottom = 8.dp))
             MetricRow(
                 label = stringResource(R.string.detail_price_change),
                 value = stringResource(
@@ -287,6 +302,7 @@ private fun PriceHistorySection(opportunity: Opportunity) {
             text = stringResource(R.string.detail_price_history_note),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.outline,
+            modifier = Modifier.padding(top = 8.dp),
         )
     }
 }

@@ -4,6 +4,7 @@ import com.escapa2.radar.data.local.OpportunityDao
 import com.escapa2.radar.data.local.OpportunityEntity
 import com.escapa2.radar.data.model.Opportunity
 import com.escapa2.radar.data.model.OpportunitySearchFilters
+import com.escapa2.radar.data.model.PriceSnapshot
 import com.escapa2.radar.data.model.TransportMode
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -139,6 +140,7 @@ class CachedOpportunityRepositoryTest {
         override suspend fun getOpportunity(id: String): Opportunity? =
             items.firstOrNull { it.id == id }
         override suspend fun search(filters: OpportunitySearchFilters): List<Opportunity> = items
+        override suspend fun getPriceHistory(id: String): List<PriceSnapshot> = emptyList()
     }
 
     private class FailingSource : OpportunityRepository {
@@ -147,6 +149,8 @@ class CachedOpportunityRepositoryTest {
         override suspend fun getOpportunity(id: String): Opportunity? =
             throw IllegalStateException("backend unavailable")
         override suspend fun search(filters: OpportunitySearchFilters): List<Opportunity> =
+            throw IllegalStateException("backend unavailable")
+        override suspend fun getPriceHistory(id: String): List<PriceSnapshot> =
             throw IllegalStateException("backend unavailable")
     }
 }

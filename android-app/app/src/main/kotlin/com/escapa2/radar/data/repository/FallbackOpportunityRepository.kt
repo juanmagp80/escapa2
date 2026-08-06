@@ -2,6 +2,7 @@ package com.escapa2.radar.data.repository
 
 import com.escapa2.radar.data.model.Opportunity
 import com.escapa2.radar.data.model.OpportunitySearchFilters
+import com.escapa2.radar.data.model.PriceSnapshot
 
 /**
  * Tries the remote backend and falls back to the local source on connectivity
@@ -41,6 +42,17 @@ class FallbackOpportunityRepository(
         } catch (throwable: Throwable) {
             if (NetworkFallback.shouldFallBack(throwable)) {
                 local.search(filters)
+            } else {
+                throw throwable
+            }
+        }
+
+    override suspend fun getPriceHistory(id: String): List<PriceSnapshot> =
+        try {
+            remote.getPriceHistory(id)
+        } catch (throwable: Throwable) {
+            if (NetworkFallback.shouldFallBack(throwable)) {
+                local.getPriceHistory(id)
             } else {
                 throw throwable
             }
