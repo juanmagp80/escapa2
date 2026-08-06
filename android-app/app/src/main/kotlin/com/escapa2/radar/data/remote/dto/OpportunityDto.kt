@@ -20,6 +20,12 @@ data class OpportunityDto(
     @SerialName("cost_per_useful_hour_eur") val costPerUsefulHourEur: Double? = null,
     @SerialName("provider_verified_at") val providerVerifiedAt: String? = null,
     @SerialName("value_score") val valueScore: Double? = null,
+    @SerialName("origin_city") val originCity: String? = null,
+    val interests: List<String> = emptyList(),
+    @SerialName("flight_cost_eur") val flightCostEur: Double? = null,
+    @SerialName("hotel_cost_eur") val hotelCostEur: Double? = null,
+    @SerialName("route_cost_eur") val routeCostEur: Double? = null,
+    @SerialName("booking_url") val bookingUrl: String? = null,
 )
 
 fun OpportunityDto.toDomain(): Opportunity = Opportunity(
@@ -37,4 +43,10 @@ fun OpportunityDto.toDomain(): Opportunity = Opportunity(
     costPerUsefulHourEur = costPerUsefulHourEur ?: 0.0,
     valueScore = valueScore ?: 0.0,
     verifiedAt = providerVerifiedAt ?: "",
+    originCity = originCity,
+    interests = interests,
+    flightCostEur = flightCostEur,
+    hotelCostEur = hotelCostEur,
+    routeCostEur = routeCostEur,
+    bookingUrl = bookingUrl,
 )

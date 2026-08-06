@@ -1,9 +1,13 @@
 package com.escapa2.radar.ui.explore
 
+import com.escapa2.radar.data.model.AvailabilityWindow
 import com.escapa2.radar.data.model.Opportunity
 import com.escapa2.radar.data.model.OpportunitySearchFilters
 import com.escapa2.radar.data.model.TransportMode
+import com.escapa2.radar.data.model.TravelProfile
+import com.escapa2.radar.data.repository.AvailabilityRepository
 import com.escapa2.radar.data.repository.OpportunityRepository
+import com.escapa2.radar.data.repository.ProfileRepository
 import com.escapa2.radar.data.repository.filterOpportunities
 import com.escapa2.radar.ui.components.UiState
 import kotlinx.coroutines.Dispatchers
@@ -36,7 +40,11 @@ class ExploreViewModelTest {
 
     @Test
     fun searchExposesContentWhenResultsExist() = runTest(dispatcher.scheduler) {
-        val viewModel = ExploreViewModel(FakeSearchRepository())
+        val viewModel = ExploreViewModel(
+            FakeSearchRepository(),
+            StaticAvailabilityRepository(emptyList()),
+            StaticProfileRepository(),
+        )
         advanceUntilIdle()
 
         viewModel.search(
@@ -53,7 +61,11 @@ class ExploreViewModelTest {
 
     @Test
     fun searchExposesEmptyWhenNoResultsMatch() = runTest(dispatcher.scheduler) {
-        val viewModel = ExploreViewModel(FakeSearchRepository())
+        val viewModel = ExploreViewModel(
+            FakeSearchRepository(),
+            StaticAvailabilityRepository(emptyList()),
+            StaticProfileRepository(),
+        )
         advanceUntilIdle()
 
         viewModel.search(
@@ -68,7 +80,11 @@ class ExploreViewModelTest {
 
     @Test
     fun searchExposesErrorWhenRepositoryFails() = runTest(dispatcher.scheduler) {
-        val viewModel = ExploreViewModel(FailingSearchRepository())
+        val viewModel = ExploreViewModel(
+            FailingSearchRepository(),
+            StaticAvailabilityRepository(emptyList()),
+            StaticProfileRepository(),
+        )
         advanceUntilIdle()
 
         viewModel.search(
@@ -85,7 +101,11 @@ class ExploreViewModelTest {
 
     @Test
     fun searchWithDestinationQueryFiltersResults() = runTest(dispatcher.scheduler) {
-        val viewModel = ExploreViewModel(FakeSearchRepository())
+        val viewModel = ExploreViewModel(
+            FakeSearchRepository(),
+            StaticAvailabilityRepository(emptyList()),
+            StaticProfileRepository(),
+        )
         advanceUntilIdle()
 
         viewModel.search(
@@ -101,7 +121,11 @@ class ExploreViewModelTest {
 
     @Test
     fun clearResultsResetsToEmpty() = runTest(dispatcher.scheduler) {
-        val viewModel = ExploreViewModel(FakeSearchRepository())
+        val viewModel = ExploreViewModel(
+            FakeSearchRepository(),
+            StaticAvailabilityRepository(emptyList()),
+            StaticProfileRepository(),
+        )
         advanceUntilIdle()
 
         viewModel.search(maxTotalCostEur = null, transportMode = null, minUsefulHours = null)
@@ -110,6 +134,20 @@ class ExploreViewModelTest {
 
         viewModel.clearResults()
         assertTrue(viewModel.uiState.value is UiState.Empty)
+    }
+
+    @Test
+    fun initLoadsResultsAndContext() = runTest(dispatcher.scheduler) {
+        val viewModel = ExploreViewModel(
+            FakeSearchRepository(),
+            StaticAvailabilityRepository(listOf(sampleWindow())),
+            StaticProfileRepository(),
+        )
+        advanceUntilIdle()
+
+        assertEquals("Madrid", viewModel.defaultOrigin.value)
+        assertEquals(1, viewModel.windows.value.size)
+        assertTrue(viewModel.uiState.value is UiState.Content)
     }
 
     private class FakeSearchRepository : OpportunityRepository {
@@ -133,6 +171,36 @@ class ExploreViewModelTest {
         override suspend fun search(filters: OpportunitySearchFilters): List<Opportunity> =
             throw IllegalStateException("backend unavailable")
     }
+}
+
+private fun sampleWindow() = AvailabilityWindow(
+    id = "avail-1",
+    startAt = "2026-08-14T18:00:00+02:00",
+    endAt = "2026-08-16T22:00:00+02:00",
+    kind = "WEEKEND",
+    isFlexible = true,
+)
+
+private class StaticAvailabilityRepository(
+    private val items: List<AvailabilityWindow>,
+) : AvailabilityRepository {
+    override suspend fun getWindows(): List<AvailabilityWindow> = items
+}
+
+private class StaticProfileRepository : ProfileRepository {
+    override suspend fun getProfile(): TravelProfile = TravelProfile(
+        id = "dev-profile",
+        originCity = "Madrid",
+        currency = "EUR",
+        defaultBudgetEur = 350.0,
+        maxDriveMinutes = 240,
+        preferredTransport = TransportMode.EITHER,
+        interests = emptyList(),
+        avoidPreferences = emptyList(),
+        airports = emptyList(),
+    )
+
+    override suspend fun saveProfile(updated: TravelProfile): TravelProfile = updated
 }
 
 private fun sampleOpportunity(

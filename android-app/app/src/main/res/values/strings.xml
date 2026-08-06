@@ -21,6 +21,8 @@
     <string name="home_watch_change_down">−%1$s EUR desde ayer</string>
     <string name="home_watch_change_flat">Sin cambios desde ayer</string>
     <string name="home_verified">Verificado</string>
+    <string name="home_availability_flexible">Fechas flexibles</string>
+    <string name="home_availability_fixed">Fechas fijas</string>
     <string name="explore_title">Explorar escapadas</string>
     <string name="radar_title">Radar de viajes vigilados</string>
     <string name="radar_active_watches">Seguimientos activos</string>
@@ -42,6 +44,10 @@
     <string name="profile_avoid">Exclusiones</string>
     <string name="profile_airports">Aeropuertos de salida</string>
     <string name="profile_airport_enabled">Habilitado</string>
+    <string name="profile_airport_disabled">Deshabilitado</string>
+    <string name="profile_airport_remove">Quitar</string>
+    <string name="profile_airport_add">Añadir</string>
+    <string name="profile_airport_add_hint">IATA (ej. BCN)</string>
     <string name="profile_airport_transfer">Transfer: %1$s € · %2$d min</string>
     <string name="profile_save">Guardar perfil</string>
     <string name="profile_saved">Perfil guardado</string>
@@ -68,6 +74,13 @@
 
     <string name="detail_back">Volver</string>
     <string name="detail_cost_summary">Desglose de costes</string>
+    <string name="detail_breakdown_title">Detalle del precio</string>
+    <string name="detail_breakdown_flight">Vuelo + traslados</string>
+    <string name="detail_breakdown_hotel">Hotel</string>
+    <string name="detail_breakdown_route">Coche (combustible, peajes, parking)</string>
+    <string name="detail_booking_title">Reservar</string>
+    <string name="detail_booking_hint">Se abrirá el proveedor para comprobar disponibilidad y precio actuales.</string>
+    <string name="detail_booking_open">Ver en el proveedor</string>
     <string name="detail_cost_per_person">Coste por persona</string>
     <string name="detail_cost_per_night">Coste por noche</string>
     <string name="detail_useful_time">Tiempo útil</string>
@@ -87,11 +100,17 @@
     <string name="detail_follow_error">No se pudo seguir la búsqueda.</string>
 
     <string name="explore_filters_title">Filtros de búsqueda</string>
+    <string name="explore_origin_label">Ciudad de salida</string>
     <string name="explore_budget_label">Presupuesto máximo para dos (EUR)</string>
     <string name="explore_min_hours_label">Horas útiles mínimas</string>
     <string name="explore_transport_label">Transporte</string>
     <string name="explore_transport_any">Cualquiera</string>
+    <string name="explore_search_button">Buscar escapada</string>
     <string name="explore_surprise_button">Sorpréndeme</string>
+    <string name="explore_interests_label">Tipo de escapada</string>
+    <string name="explore_interest_any">Cualquiera</string>
+    <string name="explore_free_dates_label">Fechas libres</string>
+    <string name="explore_free_dates_any">Cualquiera</string>
     <string name="explore_results_hint">Resultados ordenados por coste por hora útil. Cada precio se muestra con su fecha de verificación.</string>
     <string name="explore_results_empty">No hay escapadas con esos filtros. Prueba a relajarlos.</string>
     <string name="explore_destination_label">Destino (opcional)</string>

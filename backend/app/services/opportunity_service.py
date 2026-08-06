@@ -32,6 +32,8 @@ class OpportunityQuery(BaseModel):
     start_after: datetime | None = None
     end_before: datetime | None = None
     destination: str | None = Field(default=None, max_length=120)
+    origin: str | None = Field(default=None, max_length=120)
+    interest: str | None = Field(default=None, max_length=40)
     min_useful_hours: float | None = Field(default=None, ge=0)
     sort: str | None = Field(default=None, max_length=40)
 
@@ -87,6 +89,10 @@ class OpportunityService:
         if query.destination is not None and query.destination.lower() not in (
             item.destination_name.lower()
         ):
+            return False
+        if query.origin is not None and (item.origin_city or "").lower() != query.origin.lower():
+            return False
+        if query.interest is not None and query.interest not in item.interests:
             return False
         if (
             query.min_useful_hours is not None

@@ -29,13 +29,38 @@ fun filterOpportunities(
         val destinationMatches = filters.destinationQuery == null ||
             opportunity.destinationName.contains(filters.destinationQuery, ignoreCase = true)
 
+        val originMatches = filters.originCity == null ||
+            opportunity.originCity.equals(filters.originCity, ignoreCase = true)
+
+        val interestMatches = filters.interest == null ||
+            filters.interest in opportunity.interests
+
+        val startsAfter = filters.startAfter == null ||
+            after(opportunity.startAt, filters.startAfter)
+
+        val endsBefore = filters.endBefore == null ||
+            before(opportunity.endAt, filters.endBefore)
+
         val nights = tripNights(opportunity)
         val withinDuration = (filters.minNights == null || nights >= filters.minNights) &&
             (filters.maxNights == null || nights <= filters.maxNights)
 
         withinBudget && transportMatches && enoughUsefulHours &&
-            destinationMatches && withinDuration
+            destinationMatches && originMatches && interestMatches &&
+            startsAfter && endsBefore && withinDuration
     }
+}
+
+private fun after(candidate: String, reference: String): Boolean {
+    val parsed = runCatching { Instant.parse(candidate) }.getOrNull() ?: return false
+    val ref = runCatching { Instant.parse(reference) }.getOrNull() ?: return true
+    return !parsed.isBefore(ref)
+}
+
+private fun before(candidate: String, reference: String): Boolean {
+    val parsed = runCatching { Instant.parse(candidate) }.getOrNull() ?: return false
+    val ref = runCatching { Instant.parse(reference) }.getOrNull() ?: return true
+    return !parsed.isAfter(ref)
 }
 
 /**

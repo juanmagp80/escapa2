@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, String
+from sqlalchemy import JSON, DateTime, Float, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -29,4 +29,10 @@ class TravelOpportunity(Base):
     comfort_score: Mapped[float | None] = mapped_column(Float)
     value_score: Mapped[float | None] = mapped_column(Float)
     provider_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    origin_city: Mapped[str | None] = mapped_column(String(120))
+    interests: Mapped[list[str]] = mapped_column(JSON, default=list)
+    flight_cost_eur: Mapped[float | None] = mapped_column(Float)
+    hotel_cost_eur: Mapped[float | None] = mapped_column(Float)
+    route_cost_eur: Mapped[float | None] = mapped_column(Float)
+    booking_url: Mapped[str | None] = mapped_column(String(500))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)

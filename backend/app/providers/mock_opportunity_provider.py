@@ -77,12 +77,19 @@ def _build_opportunity(
     travelers: int,
     nights: int,
     verified_at: str,
+    origin_city: str = "Madrid",
+    interests: list[str] | None = None,
+    booking_url: str | None = None,
 ) -> Opportunity:
     total = total_trip_cost(components)
     useful_hours = breakdown.useful_hours
     per_person = cost_per_person(total, travelers)
     per_night = cost_per_night(total, nights)
     per_useful_hour = cost_per_useful_hour(total, useful_hours)
+    flight_cost = components.flight_total + components.airport_transfer_total
+    route_cost = (
+        components.route_fuel_total + components.toll_total + components.destination_parking_total
+    )
     return Opportunity(
         id=uuid.UUID(opportunity_id),
         destination_code=destination_code,
@@ -98,6 +105,12 @@ def _build_opportunity(
             round(per_useful_hour, 2) if per_useful_hour is not None else None
         ),
         provider_verified_at=_utc(verified_at),
+        origin_city=origin_city,
+        interests=interests or [],
+        flight_cost_eur=round(flight_cost, 2) if flight_cost else None,
+        hotel_cost_eur=round(components.hotel_total, 2) if components.hotel_total else None,
+        route_cost_eur=round(route_cost, 2) if route_cost else None,
+        booking_url=booking_url,
     )
 
 
@@ -276,6 +289,7 @@ class MockOpportunityProvider:
                     travelers=2,
                     nights=2,
                     verified_at="2026-08-05T12:00:00+00:00",
+                    interests=["naturaleza", "gastronomía", "ciudad"],
                 ),
                 _build_opportunity(
                     opportunity_id="22222222-2222-4222-8222-222222222222",
@@ -301,6 +315,7 @@ class MockOpportunityProvider:
                     travelers=2,
                     nights=2,
                     verified_at="2026-08-05T12:00:00+00:00",
+                    interests=["ciudad", "gastronomía"],
                 ),
                 _build_opportunity(
                     opportunity_id="33333333-3333-4333-8333-333333333333",
@@ -326,6 +341,7 @@ class MockOpportunityProvider:
                     travelers=2,
                     nights=2,
                     verified_at="2026-08-05T12:00:00+00:00",
+                    interests=["ciudad", "gastronomía", "naturaleza"],
                 ),
                 _build_opportunity(
                     opportunity_id="44444444-4444-4444-8444-444444444444",
@@ -351,6 +367,7 @@ class MockOpportunityProvider:
                     travelers=2,
                     nights=2,
                     verified_at="2026-08-05T12:00:00+00:00",
+                    interests=["ciudad", "gastronomía"],
                 ),
             ]
         )

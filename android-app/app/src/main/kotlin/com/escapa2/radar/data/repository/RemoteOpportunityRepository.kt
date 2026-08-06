@@ -21,11 +21,22 @@ class RemoteOpportunityRepository(
     override suspend fun getOpportunity(id: String): Opportunity? =
         api.getOpportunity(id).toDomain()
 
-    override suspend fun search(filters: OpportunitySearchFilters): List<Opportunity> =
-        api.searchOpportunities(
+    override suspend fun search(filters: OpportunitySearchFilters): List<Opportunity> {
+        val results = api.searchOpportunities(
             maxTotalCostEur = filters.maxTotalCostEur,
             transportMode = filters.transportMode?.name,
             minUsefulHours = filters.minUsefulHours,
             destination = filters.destinationQuery,
+            origin = filters.originCity,
+            interest = filters.interest,
+            startAfter = filters.startAfter,
+            endBefore = filters.endBefore,
         ).map { it.toDomain() }
+        // The backend does not filter by nights; apply that locally so the
+        // duration filter works consistently with the fake repository.
+        return filterOpportunities(
+            results,
+            OpportunitySearchFilters(minNights = filters.minNights, maxNights = filters.maxNights),
+        )
+    }
 }

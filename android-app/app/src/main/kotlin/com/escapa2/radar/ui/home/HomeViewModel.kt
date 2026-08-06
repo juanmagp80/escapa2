@@ -2,8 +2,10 @@ package com.escapa2.radar.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.escapa2.radar.data.model.AvailabilityWindow
 import com.escapa2.radar.data.model.Opportunity
 import com.escapa2.radar.data.model.SearchWatch
+import com.escapa2.radar.data.repository.AvailabilityRepository
 import com.escapa2.radar.data.repository.OpportunityRepository
 import com.escapa2.radar.data.repository.SearchWatchRepository
 import com.escapa2.radar.ui.components.UiState
@@ -22,6 +24,7 @@ import kotlinx.coroutines.launch
 class HomeViewModel @Inject constructor(
     private val repository: OpportunityRepository,
     private val watchRepository: SearchWatchRepository,
+    private val availabilityRepository: AvailabilityRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState<HomeDashboard>>(UiState.Loading)
@@ -37,10 +40,11 @@ class HomeViewModel @Inject constructor(
             try {
                 val opportunities = repository.getOpportunities()
                 val watches = watchRepository.getWatches()
-                _uiState.value = if (opportunities.isEmpty() && watches.isEmpty()) {
+                val windows = availabilityRepository.getWindows()
+                _uiState.value = if (opportunities.isEmpty() && watches.isEmpty() && windows.isEmpty()) {
                     UiState.Empty
                 } else {
-                    UiState.Content(buildDashboard(opportunities, watches))
+                    UiState.Content(buildDashboard(opportunities, watches, windows))
                 }
             } catch (e: Exception) {
                 _uiState.value = UiState.Error(e.message ?: "Unexpected error")
@@ -51,14 +55,13 @@ class HomeViewModel @Inject constructor(
     private fun buildDashboard(
         opportunities: List<Opportunity>,
         watches: List<SearchWatch>,
+        windows: List<AvailabilityWindow>,
     ): HomeDashboard = HomeDashboard(
         opportunities = opportunities,
         bestOpportunity = bestOpportunity(opportunities),
         biggestDrop = biggestDrop(opportunities),
         watches = watches,
-        nextFreeDates = opportunities
-            .sortedBy { it.startAt }
-            .take(NEXT_FREE_DATES_LIMIT),
+        availabilityWindows = windows.sortedBy { it.startAt }.take(NEXT_FREE_DATES_LIMIT),
         lastUpdateAt = opportunities.maxOfOrNull { it.verifiedAt },
     )
 
@@ -93,7 +96,7 @@ data class HomeDashboard(
     val bestOpportunity: Opportunity?,
     val biggestDrop: Opportunity?,
     val watches: List<SearchWatch>,
-    val nextFreeDates: List<Opportunity>,
+    val availabilityWindows: List<AvailabilityWindow>,
     val lastUpdateAt: String?,
 )
 

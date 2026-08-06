@@ -1,9 +1,11 @@
 package com.escapa2.radar.ui.home
 
+import com.escapa2.radar.data.model.AvailabilityWindow
 import com.escapa2.radar.data.model.Opportunity
 import com.escapa2.radar.data.model.OpportunitySearchFilters
 import com.escapa2.radar.data.model.SearchWatch
 import com.escapa2.radar.data.model.TransportMode
+import com.escapa2.radar.data.repository.AvailabilityRepository
 import com.escapa2.radar.data.repository.OpportunityRepository
 import com.escapa2.radar.data.repository.SearchWatchRepository
 import com.escapa2.radar.ui.components.UiState
@@ -41,6 +43,7 @@ class HomeViewModelTest {
         val viewModel = HomeViewModel(
             StaticRepository(listOf(sampleOpportunity())),
             StaticWatchRepository(emptyList()),
+            StaticAvailabilityRepository(listOf(sampleWindow())),
         )
         advanceUntilIdle()
 
@@ -51,6 +54,7 @@ class HomeViewModelTest {
         assertEquals("Santiago de Compostela", dashboard.opportunities[0].destinationName)
         assertEquals("Santiago de Compostela", dashboard.bestOpportunity?.destinationName)
         assertEquals("2026-08-05T12:00:00Z", dashboard.lastUpdateAt)
+        assertEquals(1, dashboard.availabilityWindows.size)
     }
 
     @Test
@@ -58,6 +62,7 @@ class HomeViewModelTest {
         val viewModel = HomeViewModel(
             StaticRepository(emptyList()),
             StaticWatchRepository(emptyList()),
+            StaticAvailabilityRepository(emptyList()),
         )
         advanceUntilIdle()
 
@@ -66,7 +71,11 @@ class HomeViewModelTest {
 
     @Test
     fun loadExposesErrorWhenRepositoryFails() = runTest(dispatcher.scheduler) {
-        val viewModel = HomeViewModel(FailingRepository(), StaticWatchRepository(emptyList()))
+        val viewModel = HomeViewModel(
+            FailingRepository(),
+            StaticWatchRepository(emptyList()),
+            StaticAvailabilityRepository(emptyList()),
+        )
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
@@ -91,6 +100,7 @@ class HomeViewModelTest {
         val viewModel = HomeViewModel(
             StaticRepository(listOf(lowScore, highScore)),
             StaticWatchRepository(emptyList()),
+            StaticAvailabilityRepository(emptyList()),
         )
         advanceUntilIdle()
 
@@ -115,6 +125,7 @@ class HomeViewModelTest {
         val viewModel = HomeViewModel(
             StaticRepository(listOf(smallDrop, bigDrop)),
             StaticWatchRepository(emptyList()),
+            StaticAvailabilityRepository(emptyList()),
         )
         advanceUntilIdle()
 
@@ -128,6 +139,7 @@ class HomeViewModelTest {
         val viewModel = HomeViewModel(
             StaticRepository(listOf(noPrevious)),
             StaticWatchRepository(emptyList()),
+            StaticAvailabilityRepository(emptyList()),
         )
         advanceUntilIdle()
 
@@ -151,6 +163,7 @@ class HomeViewModelTest {
         val viewModel = HomeViewModel(
             StaticRepository(listOf(sampleOpportunity())),
             StaticWatchRepository(listOf(watch)),
+            StaticAvailabilityRepository(emptyList()),
         )
         advanceUntilIdle()
 
@@ -175,6 +188,20 @@ class HomeViewModelTest {
         previousTotalCostEur = 212.0,
         valueScore = 100.0,
     )
+
+    private fun sampleWindow() = AvailabilityWindow(
+        id = "avail-1",
+        startAt = "2026-08-14T18:00:00+02:00",
+        endAt = "2026-08-16T22:00:00+02:00",
+        kind = "WEEKEND",
+        isFlexible = true,
+    )
+
+    private class StaticAvailabilityRepository(
+        private val items: List<AvailabilityWindow>,
+    ) : AvailabilityRepository {
+        override suspend fun getWindows(): List<AvailabilityWindow> = items
+    }
 
     private class StaticRepository(
         private val items: List<Opportunity>,

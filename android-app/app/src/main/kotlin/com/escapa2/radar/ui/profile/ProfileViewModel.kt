@@ -81,6 +81,38 @@ class ProfileViewModel @Inject constructor(
         )
     }
 
+    fun toggleAirportEnabled(iataCode: String) {
+        _form.value = _form.value.copy(
+            airports = _form.value.airports.map { airport ->
+                if (airport.iataCode == iataCode) {
+                    airport.copy(enabled = !airport.enabled)
+                } else {
+                    airport
+                }
+            },
+        )
+    }
+
+    fun removeAirport(iataCode: String) {
+        _form.value = _form.value.copy(
+            airports = _form.value.airports.filterNot { it.iataCode == iataCode },
+        )
+    }
+
+    fun addAirport(iataCode: String) {
+        val code = iataCode.trim().uppercase()
+        if (code.length != 3 || _form.value.airports.any { it.iataCode == code }) return
+        _form.value = _form.value.copy(
+            airports = _form.value.airports + AirportPreference(
+                id = code,
+                iataCode = code,
+                enabled = true,
+                transferCostEur = null,
+                transferMinutes = null,
+            ),
+        )
+    }
+
     fun save() {
         val profileId = loadedProfileId ?: return
         viewModelScope.launch {

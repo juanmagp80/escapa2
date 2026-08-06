@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -190,6 +191,8 @@ private fun DetailContent(
                     value = "${opportunity.costPerUsefulHourEur.formatEur()}/h",
                 )
             }
+            CostBreakdownSection(opportunity = opportunity)
+            BookingLinkSection(bookingUrl = opportunity.bookingUrl)
             PriceHistorySection(opportunity = opportunity)
             AiSummarySection(summaryState = summaryState)
             Button(
@@ -215,6 +218,40 @@ private fun DetailContent(
                 color = MaterialTheme.colorScheme.outline,
             )
             Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun CostBreakdownSection(opportunity: Opportunity) {
+    val items = buildList {
+        opportunity.flightCostEur?.let { add(stringResource(R.string.detail_breakdown_flight) to it) }
+        opportunity.hotelCostEur?.let { add(stringResource(R.string.detail_breakdown_hotel) to it) }
+        opportunity.routeCostEur?.let { add(stringResource(R.string.detail_breakdown_route) to it) }
+    }
+    if (items.isEmpty()) return
+    SectionCard(title = stringResource(R.string.detail_breakdown_title)) {
+        items.forEach { (label, cost) ->
+            MetricRow(label = label, value = cost.formatEur())
+        }
+    }
+}
+
+@Composable
+private fun BookingLinkSection(bookingUrl: String?) {
+    if (bookingUrl.isNullOrBlank()) return
+    val uriHandler = LocalUriHandler.current
+    SectionCard(title = stringResource(R.string.detail_booking_title)) {
+        Text(
+            text = stringResource(R.string.detail_booking_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.outline,
+        )
+        Button(
+            onClick = { uriHandler.openUri(bookingUrl) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.detail_booking_open))
         }
     }
 }

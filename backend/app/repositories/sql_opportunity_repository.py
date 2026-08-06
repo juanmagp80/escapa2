@@ -101,6 +101,12 @@ class SqlOpportunityRepository:
         row.comfort_score = opportunity.comfort_score
         row.value_score = opportunity.value_score
         row.provider_verified_at = opportunity.provider_verified_at
+        row.origin_city = opportunity.origin_city
+        row.interests = opportunity.interests
+        row.flight_cost_eur = opportunity.flight_cost_eur
+        row.hotel_cost_eur = opportunity.hotel_cost_eur
+        row.route_cost_eur = opportunity.route_cost_eur
+        row.booking_url = opportunity.booking_url
 
     @staticmethod
     def _to_snapshot_orm(snapshot: PriceSnapshot) -> PriceSnapshotORM:
@@ -142,6 +148,12 @@ class SqlOpportunityRepository:
             provider_verified_at=(
                 as_utc(row.provider_verified_at) if row.provider_verified_at is not None else None
             ),
+            origin_city=row.origin_city,
+            interests=list(row.interests or []),
+            flight_cost_eur=row.flight_cost_eur,
+            hotel_cost_eur=row.hotel_cost_eur,
+            route_cost_eur=row.route_cost_eur,
+            booking_url=row.booking_url,
         )
 
     @staticmethod

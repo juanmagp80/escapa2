@@ -128,6 +128,60 @@ class OpportunityFilteringTest {
         assertEquals(0, tripNights(opportunity))
     }
 
+    @Test
+    fun originFilterMatchesCaseInsensitive() {
+        val madrid = sample("mad", "Valencia", TransportMode.CAR, 150.0, 20.0)
+            .copy(originCity = "Madrid")
+        val seville = sample("sev", "Cádiz", TransportMode.CAR, 120.0, 20.0)
+            .copy(originCity = "Sevilla")
+        val result = filterOpportunities(
+            listOf(madrid, seville),
+            OpportunitySearchFilters(originCity = "madrid"),
+        )
+
+        assertEquals(listOf("mad"), result.map { it.id })
+    }
+
+    @Test
+    fun interestFilterMatchesListMembership() {
+        val beach = sample("beach", "Almería", TransportMode.CAR, 150.0, 20.0)
+            .copy(interests = listOf("playa"))
+        val city = sample("city", "Valencia", TransportMode.CAR, 150.0, 20.0)
+            .copy(interests = listOf("ciudad"))
+        val result = filterOpportunities(
+            listOf(beach, city),
+            OpportunitySearchFilters(interest = "playa"),
+        )
+
+        assertEquals(listOf("beach"), result.map { it.id })
+    }
+
+    @Test
+    fun startAfterFiltersTripsStartingTooEarly() {
+        val early = sample("early", "Valencia", TransportMode.CAR, 150.0, 20.0)
+        val late = sample("late", "Creta", TransportMode.FLIGHT, 400.0, 50.0)
+            .copy(startAt = "2026-08-20T08:00:00+02:00")
+        val result = filterOpportunities(
+            listOf(early, late),
+            OpportunitySearchFilters(startAfter = "2026-08-18T00:00:00Z"),
+        )
+
+        assertEquals(listOf("late"), result.map { it.id })
+    }
+
+    @Test
+    fun endBeforeFiltersTripsEndingTooLate() {
+        val early = sample("early", "Valencia", TransportMode.CAR, 150.0, 20.0)
+        val late = sample("late", "Creta", TransportMode.FLIGHT, 400.0, 50.0)
+            .copy(endAt = "2026-08-19T20:00:00+02:00")
+        val result = filterOpportunities(
+            listOf(early, late),
+            OpportunitySearchFilters(endBefore = "2026-08-17T00:00:00Z"),
+        )
+
+        assertEquals(listOf("early"), result.map { it.id })
+    }
+
     private fun sample(
         id: String,
         name: String,

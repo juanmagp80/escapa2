@@ -20,10 +20,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -84,6 +87,9 @@ fun ProfileScreen(
                 onTransportChange = viewModel::updateTransport,
                 onToggleInterest = viewModel::toggleInterest,
                 onToggleAvoid = viewModel::toggleAvoid,
+                onToggleAirport = viewModel::toggleAirportEnabled,
+                onRemoveAirport = viewModel::removeAirport,
+                onAddAirport = viewModel::addAirport,
                 onSave = viewModel::save,
                 modifier = Modifier.padding(padding),
             )
@@ -116,6 +122,9 @@ private fun ProfileForm(
     onTransportChange: (TransportMode) -> Unit,
     onToggleInterest: (String) -> Unit,
     onToggleAvoid: (String) -> Unit,
+    onToggleAirport: (String) -> Unit,
+    onRemoveAirport: (String) -> Unit,
+    onAddAirport: (String) -> Unit,
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -173,7 +182,12 @@ private fun ProfileForm(
             selected = form.avoidPreferences,
             onToggle = onToggleAvoid,
         )
-        AirportSection(airports = form.airports)
+        AirportSection(
+            airports = form.airports,
+            onToggle = onToggleAirport,
+            onRemove = onRemoveAirport,
+            onAdd = onAddAirport,
+        )
         Button(
             onClick = onSave,
             modifier = Modifier.fillMaxWidth(),
@@ -184,8 +198,13 @@ private fun ProfileForm(
 }
 
 @Composable
-private fun AirportSection(airports: List<AirportPreference>) {
-    if (airports.isEmpty()) return
+private fun AirportSection(
+    airports: List<AirportPreference>,
+    onToggle: (String) -> Unit,
+    onRemove: (String) -> Unit,
+    onAdd: (String) -> Unit,
+) {
+    var newIata by remember { mutableStateOf("") }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = stringResource(R.string.profile_airports),
@@ -217,15 +236,44 @@ private fun AirportSection(airports: List<AirportPreference>) {
                         }
                     }
                 }
-                Text(
-                    text = if (airport.enabled) {
-                        stringResource(R.string.profile_airport_enabled)
-                    } else {
-                        ""
-                    },
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
+                TextButton(onClick = { onToggle(airport.iataCode) }) {
+                    Text(
+                        text = if (airport.enabled) {
+                            stringResource(R.string.profile_airport_enabled)
+                        } else {
+                            stringResource(R.string.profile_airport_disabled)
+                        },
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                TextButton(onClick = { onRemove(airport.iataCode) }) {
+                    Text(
+                        text = stringResource(R.string.profile_airport_remove),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            OutlinedTextField(
+                value = newIata,
+                onValueChange = { newIata = it.uppercase() },
+                label = { Text(stringResource(R.string.profile_airport_add_hint)) },
+                singleLine = true,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(
+                onClick = {
+                    onAdd(newIata)
+                    newIata = ""
+                },
+            ) {
+                Text(stringResource(R.string.profile_airport_add))
             }
         }
     }

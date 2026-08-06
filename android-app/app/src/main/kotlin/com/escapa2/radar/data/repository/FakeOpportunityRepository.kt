@@ -38,6 +38,10 @@ class FakeOpportunityRepository @Inject constructor() : OpportunityRepository {
             verifiedAt = "2026-08-05T12:00:00Z",
             previousTotalCostEur = 212.0,
             valueScore = 100.0,
+            originCity = "Madrid",
+            interests = listOf("naturaleza", "gastronomía", "ciudad"),
+            routeCostEur = 146.0,
+            hotelCostEur = 52.0,
         ),
         Opportunity(
             id = "opp-avion-andalucia",
@@ -54,6 +58,10 @@ class FakeOpportunityRepository @Inject constructor() : OpportunityRepository {
             verifiedAt = "2026-08-05T12:00:00Z",
             previousTotalCostEur = 270.0,
             valueScore = 89.4,
+            originCity = "Madrid",
+            interests = listOf("ciudad", "gastronomía"),
+            flightCostEur = 198.0,
+            hotelCostEur = 48.0,
         ),
         Opportunity(
             id = "opp-avion-porto",
@@ -70,6 +78,10 @@ class FakeOpportunityRepository @Inject constructor() : OpportunityRepository {
             verifiedAt = "2026-08-05T12:00:00Z",
             previousTotalCostEur = 328.0,
             valueScore = 75.5,
+            originCity = "Madrid",
+            interests = listOf("ciudad", "gastronomía", "naturaleza"),
+            flightCostEur = 240.0,
+            hotelCostEur = 72.0,
         ),
         Opportunity(
             id = "opp-avion-porto-barata",
@@ -86,6 +98,10 @@ class FakeOpportunityRepository @Inject constructor() : OpportunityRepository {
             verifiedAt = "2026-08-05T12:00:00Z",
             previousTotalCostEur = 226.0,
             valueScore = 64.8,
+            originCity = "Madrid",
+            interests = listOf("ciudad", "gastronomía"),
+            flightCostEur = 180.0,
+            hotelCostEur = 34.0,
         ),
     )
     }

@@ -4,6 +4,7 @@ import com.escapa2.radar.data.model.OpportunitySearchFilters
 import com.escapa2.radar.data.remote.dto.AiSummaryDto
 import com.escapa2.radar.data.remote.dto.AiSummaryRequestDto
 import com.escapa2.radar.data.remote.dto.AirportPreferenceDto
+import com.escapa2.radar.data.remote.dto.AvailabilityWindowDto
 import com.escapa2.radar.data.remote.dto.OpportunityDto
 import com.escapa2.radar.data.remote.dto.ProfileDto
 import com.escapa2.radar.data.remote.dto.ProfileUpdateDto
@@ -36,6 +37,11 @@ interface Escapa2Api {
         @Query("transport_mode") transportMode: String? = null,
         @Query("min_useful_hours") minUsefulHours: Double? = null,
         @Query("destination") destination: String? = null,
+        @Query("origin") origin: String? = null,
+        @Query("interest") interest: String? = null,
+        @Query("start_after") startAfter: String? = null,
+        @Query("end_before") endBefore: String? = null,
+        @Query("sort") sort: String? = null,
     ): List<OpportunityDto>
 
     @POST("ai/opportunity-summary")
@@ -58,4 +64,7 @@ interface Escapa2Api {
 
     @POST("watches")
     suspend fun createWatch(@Body body: SearchWatchCreateDto): SearchWatchDto
+
+    @GET("availability")
+    suspend fun getAvailabilityWindows(): List<AvailabilityWindowDto>
 }

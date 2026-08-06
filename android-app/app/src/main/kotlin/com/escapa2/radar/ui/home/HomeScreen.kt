@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.escapa2.radar.R
+import com.escapa2.radar.data.model.AvailabilityWindow
 import com.escapa2.radar.data.model.Opportunity
 import com.escapa2.radar.data.model.SearchWatch
 import com.escapa2.radar.ui.components.OpportunityCard
@@ -149,15 +150,14 @@ private fun ContentState(
                 )
             }
         }
-        if (dashboard.nextFreeDates.isNotEmpty()) {
+        if (dashboard.availabilityWindows.isNotEmpty()) {
             item {
                 SectionTitle(stringResource(R.string.home_next_free_dates))
             }
-            items(dashboard.nextFreeDates, key = { "dates-${it.id}" }) { opportunity ->
-                OpportunityCard(
-                    opportunity = opportunity,
-                    onClick = { onOpportunityClick(opportunity.id) },
-                )
+            dashboard.availabilityWindows.forEach { window ->
+                item {
+                    AvailabilityCard(window = window)
+                }
             }
         }
         item {
@@ -196,6 +196,39 @@ private fun SectionTitle(text: String, modifier: Modifier = Modifier) {
         fontWeight = FontWeight.Bold,
         modifier = modifier.padding(top = 4.dp),
     )
+}
+
+@Composable
+private fun AvailabilityCard(window: AvailabilityWindow, modifier: Modifier = Modifier) {
+    Card(modifier = modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = windowKindLabel(window.kind),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                text = "${window.startAt} → ${window.endAt}",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = if (window.isFlexible) {
+                    stringResource(R.string.home_availability_flexible)
+                } else {
+                    stringResource(R.string.home_availability_fixed)
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.outline,
+            )
+        }
+    }
+}
+
+private fun windowKindLabel(kind: String): String = when (kind) {
+    "WEEKEND" -> "Fin de semana"
+    "VACATION" -> "Vacaciones"
+    else -> kind
 }
 
 @Composable

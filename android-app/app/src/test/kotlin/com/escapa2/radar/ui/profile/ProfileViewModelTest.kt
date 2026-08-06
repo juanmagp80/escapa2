@@ -1,5 +1,6 @@
 package com.escapa2.radar.ui.profile
 
+import com.escapa2.radar.data.model.AirportPreference
 import com.escapa2.radar.data.model.TravelProfile
 import com.escapa2.radar.data.model.TransportMode
 import com.escapa2.radar.data.repository.ProfileRepository
@@ -13,6 +14,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -83,6 +85,62 @@ class ProfileViewModelTest {
         advanceUntilIdle()
 
         assertTrue(viewModel.saveState.value is UiState.Error)
+    }
+
+    @Test
+    fun toggleAirportEnabledFlipsFlag() = runTest(dispatcher.scheduler) {
+        val profile = sampleProfile().copy(
+            airports = listOf(
+                AirportPreference("airport-mad", "MAD", true, 12.0, 45),
+            ),
+        )
+        val viewModel = ProfileViewModel(InMemoryProfileRepository(profile))
+        advanceUntilIdle()
+
+        viewModel.toggleAirportEnabled("MAD")
+        assertFalse(viewModel.form.value.airports.single().enabled)
+
+        viewModel.toggleAirportEnabled("MAD")
+        assertTrue(viewModel.form.value.airports.single().enabled)
+    }
+
+    @Test
+    fun removeAirportDropsFromList() = runTest(dispatcher.scheduler) {
+        val profile = sampleProfile().copy(
+            airports = listOf(
+                AirportPreference("airport-mad", "MAD", true, 12.0, 45),
+                AirportPreference("airport-bcn", "BCN", true, 20.0, 60),
+            ),
+        )
+        val viewModel = ProfileViewModel(InMemoryProfileRepository(profile))
+        advanceUntilIdle()
+
+        viewModel.removeAirport("MAD")
+        assertEquals(listOf("BCN"), viewModel.form.value.airports.map { it.iataCode })
+    }
+
+    @Test
+    fun addAirportAppendsEnabledAirport() = runTest(dispatcher.scheduler) {
+        val viewModel = ProfileViewModel(InMemoryProfileRepository(sampleProfile()))
+        advanceUntilIdle()
+
+        viewModel.addAirport(" bcn ")
+        val added = viewModel.form.value.airports.single()
+        assertEquals("BCN", added.iataCode)
+        assertTrue(added.enabled)
+    }
+
+    @Test
+    fun addAirportRejectsInvalidOrDuplicateCode() = runTest(dispatcher.scheduler) {
+        val profile = sampleProfile().copy(
+            airports = listOf(AirportPreference("airport-mad", "MAD", true, 12.0, 45)),
+        )
+        val viewModel = ProfileViewModel(InMemoryProfileRepository(profile))
+        advanceUntilIdle()
+
+        viewModel.addAirport("MAD")
+        viewModel.addAirport("X")
+        assertEquals(1, viewModel.form.value.airports.size)
     }
 
     private class FailingSaveRepository(

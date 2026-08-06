@@ -20,4 +20,10 @@ data class Opportunity(
     val verifiedAt: String,
     val previousTotalCostEur: Double? = null,
     val valueScore: Double? = null,
+    val originCity: String? = null,
+    val interests: List<String> = emptyList(),
+    val flightCostEur: Double? = null,
+    val hotelCostEur: Double? = null,
+    val routeCostEur: Double? = null,
+    val bookingUrl: String? = null,
 )

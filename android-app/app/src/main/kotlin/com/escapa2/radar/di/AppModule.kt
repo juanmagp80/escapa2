@@ -7,18 +7,22 @@ import com.escapa2.radar.data.local.OpportunityDao
 import com.escapa2.radar.data.remote.ApiClient
 import com.escapa2.radar.data.remote.Escapa2Api
 import com.escapa2.radar.data.repository.AiRepository
+import com.escapa2.radar.data.repository.AvailabilityRepository
 import com.escapa2.radar.data.repository.CachedOpportunityRepository
 import com.escapa2.radar.data.repository.FakeAiRepository
+import com.escapa2.radar.data.repository.FakeAvailabilityRepository
 import com.escapa2.radar.data.repository.FakeOpportunityRepository
 import com.escapa2.radar.data.repository.FakeProfileRepository
 import com.escapa2.radar.data.repository.FakeSearchWatchRepository
 import com.escapa2.radar.data.repository.FallbackAiRepository
+import com.escapa2.radar.data.repository.FallbackAvailabilityRepository
 import com.escapa2.radar.data.repository.FallbackOpportunityRepository
 import com.escapa2.radar.data.repository.FallbackProfileRepository
 import com.escapa2.radar.data.repository.FallbackSearchWatchRepository
 import com.escapa2.radar.data.repository.OpportunityRepository
 import com.escapa2.radar.data.repository.ProfileRepository
 import com.escapa2.radar.data.repository.RemoteAiRepository
+import com.escapa2.radar.data.repository.RemoteAvailabilityRepository
 import com.escapa2.radar.data.repository.RemoteOpportunityRepository
 import com.escapa2.radar.data.repository.RemoteProfileRepository
 import com.escapa2.radar.data.repository.RemoteSearchWatchRepository
@@ -76,6 +80,13 @@ object NetworkModule {
         api: Escapa2Api,
         fallback: FakeSearchWatchRepository,
     ): SearchWatchRepository = FallbackSearchWatchRepository(RemoteSearchWatchRepository(api), fallback)
+
+    @Provides
+    @Singleton
+    fun provideAvailabilityRepository(
+        api: Escapa2Api,
+        fallback: FakeAvailabilityRepository,
+    ): AvailabilityRepository = FallbackAvailabilityRepository(RemoteAvailabilityRepository(api), fallback)
 
     @Provides
     @Singleton

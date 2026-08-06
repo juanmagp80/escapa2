@@ -12,4 +12,8 @@ data class OpportunitySearchFilters(
     val destinationQuery: String? = null,
     val minNights: Int? = null,
     val maxNights: Int? = null,
+    val originCity: String? = null,
+    val interest: String? = null,
+    val startAfter: String? = null,
+    val endBefore: String? = null,
 )

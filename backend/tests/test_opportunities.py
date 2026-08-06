@@ -122,3 +122,61 @@ def test_mock_ids_are_valid_uuids(client: TestClient) -> None:
     response = client.get("/api/v1/opportunities")
     for item in response.json():
         uuid.UUID(item["id"])
+
+
+def test_opportunity_exposes_origin_and_interests(client: TestClient) -> None:
+    response = client.get(f"/api/v1/opportunities/{SANTIAGO_ID}")
+    assert response.status_code == 200
+    item = response.json()
+    assert item["origin_city"] == "Madrid"
+    assert "naturaleza" in item["interests"]
+
+
+def test_opportunity_exposes_cost_breakdown(client: TestClient) -> None:
+    response = client.get(f"/api/v1/opportunities/{SANTIAGO_ID}")
+    item = response.json()
+    assert item["route_cost_eur"] == 146.0
+    assert item["hotel_cost_eur"] == 52.0
+    assert item["flight_cost_eur"] is None
+
+
+def test_filter_by_origin(client: TestClient) -> None:
+    response = client.get("/api/v1/opportunities", params={"origin": "madrid"})
+    assert response.status_code == 200
+    items = response.json()
+    assert all(item["origin_city"].lower() == "madrid" for item in items)
+    assert len(items) == 4
+
+
+def test_filter_by_interest(client: TestClient) -> None:
+    response = client.get("/api/v1/opportunities", params={"interest": "naturaleza"})
+    assert response.status_code == 200
+    items = response.json()
+    assert all("naturaleza" in item["interests"] for item in items)
+    assert len(items) == 2
+
+
+def test_filter_by_interest_no_match(client: TestClient) -> None:
+    response = client.get("/api/v1/opportunities", params={"interest": "playa"})
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_filter_by_start_after(client: TestClient) -> None:
+    response = client.get(
+        "/api/v1/opportunities",
+        params={"start_after": "2026-08-20T00:00:00Z"},
+    )
+    assert response.status_code == 200
+    items = response.json()
+    assert items and all(item["start_at"] >= "2026-08-20T00:00:00Z" for item in items)
+
+
+def test_filter_by_end_before(client: TestClient) -> None:
+    response = client.get(
+        "/api/v1/opportunities",
+        params={"end_before": "2026-08-17T00:00:00Z"},
+    )
+    assert response.status_code == 200
+    items = response.json()
+    assert items and all(item["end_at"] <= "2026-08-17T00:00:00Z" for item in items)
