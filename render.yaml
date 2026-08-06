@@ -1,9 +1,5 @@
 # Render blueprint for Escapa2 Radar backend.
-#
-# Docs: https://render.com/docs/blueprint-spec
-# The web service deploys the FastAPI backend from backend/Dockerfile.
-# GEMINI_API_KEY is a secret: leave `sync: false` and set it in the Render
-# dashboard after the first deploy.
+
 services:
   - type: web
     name: escapa2-backend
@@ -12,17 +8,22 @@ services:
     rootDir: backend
     dockerfilePath: Dockerfile
     healthCheckPath: /health
+
     envVars:
       - key: APP_ENV
         value: production
+
       - key: APP_DEBUG
         value: "false"
+
       - key: PERSISTENCE_BACKEND
         value: memory
+
       - key: GEMINI_ENABLED
         value: "true"
-        sync: false
+
       - key: GEMINI_API_KEY
         sync: false
+
       - key: GEMINI_MODEL
         value: gemini-3.6-flash
